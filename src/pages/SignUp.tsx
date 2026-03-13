@@ -8,13 +8,92 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { User, Building2, ArrowRight, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { User, Building2, ArrowRight, ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { API_BASE_URL } from "@/lib/api";
 
 type UserType = "candidate" | "corporate" | null;
+
+// ─── OCR helpers ─────────────────────────────────────────────────────────────
+
+const OCR_API_KEY = "K83147064488957";
+
+async function extractTextFromFile(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("apikey", OCR_API_KEY);
+  formData.append("language", "eng");
+  formData.append("isOverlayRequired", "false");
+  formData.append("detectOrientation", "true");
+  formData.append("scale", "true");
+  formData.append("OCREngine", "2");
+
+  const res = await fetch("https://api.ocr.space/parse/image", {
+    method: "POST",
+    body: formData,
+  });
+
+  const json = await res.json();
+
+  if (json.IsErroredOnProcessing) {
+    throw new Error(json.ErrorMessage?.[0] ?? "OCR failed");
+  }
+
+  return json.ParsedResults?.[0]?.ParsedText ?? "";
+}
+
+function parseCV(text: string) {
+  const lines = text
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  // ── Email ──
+  let email = "";
+  const emailRegex = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/;
+  for (const line of lines) {
+    const m = line.match(emailRegex);
+    if (m) {
+      email = m[0].trim();
+      break;
+    }
+  }
+
+  // ── Phone ──
+  let phone = "";
+  const phoneRegex = /(\+?[\d\s\-().]{7,20})/;
+  for (const line of lines) {
+    if (line.includes("@")) continue;
+    const m = line.match(phoneRegex);
+    if (m) {
+      const digits = m[1].replace(/\D/g, "");
+      if (digits.length >= 7) {
+        phone = m[1].trim();
+        break;
+      }
+    }
+  }
+
+  // ── Name ──
+  let firstName = "";
+  let lastName = "";
+  const nameRegex = /^([A-Za-z]+)\s+([A-Za-z]+)(\s+[A-Za-z]+)?$/;
+  for (const line of lines) {
+    if (line.includes("@")) continue;
+    const m = line.match(nameRegex);
+    if (m) {
+      firstName = m[1];
+      lastName = m[3] ? `${m[2]} ${m[3].trim()}` : m[2];
+      break;
+    }
+  }
+
+  return { firstName, lastName, phone, email };
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function SignUp() {
   const [userType, setUserType] = useState<UserType>(null);
@@ -62,17 +141,10 @@ export default function SignUp() {
 
     try {
       setLoading(true);
-
       const response = await fetch(`${API_BASE_URL}/auth/signup`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name,
-          email,
-          password,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
       });
 
       const data = await response.json();
@@ -96,7 +168,7 @@ export default function SignUp() {
       });
 
       navigate(userType === "candidate" ? "/candidate-portal" : "/employer-portal");
-    } catch (error) {
+    } catch {
       toast({
         title: "Server error",
         description: "Could not connect to backend server",
@@ -126,10 +198,7 @@ export default function SignUp() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <button
-                    onClick={() => {
-                      setUserType("candidate");
-                      setStep(2);
-                    }}
+                    onClick={() => { setUserType("candidate"); setStep(2); }}
                     className={`w-full flex items-center gap-4 p-5 rounded-lg border-2 transition-all hover:shadow-card-hover ${
                       userType === "candidate" ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
                     }`}
@@ -146,10 +215,7 @@ export default function SignUp() {
                   </button>
 
                   <button
-                    onClick={() => {
-                      setUserType("corporate");
-                      setStep(2);
-                    }}
+                    onClick={() => { setUserType("corporate"); setStep(2); }}
                     className={`w-full flex items-center gap-4 p-5 rounded-lg border-2 transition-all hover:shadow-card-hover ${
                       userType === "corporate" ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
                     }`}
@@ -188,7 +254,7 @@ export default function SignUp() {
                   </CardTitle>
                   <CardDescription>
                     {userType === "candidate"
-                      ? "Create your profile and start finding inclusive opportunities"
+                      ? "Upload your CV to auto-fill your details"
                       : "Register your company and connect with talented candidates"}
                   </CardDescription>
                 </CardHeader>
@@ -203,7 +269,8 @@ export default function SignUp() {
                     <div className="flex items-start gap-2">
                       <Checkbox id="terms" required />
                       <Label htmlFor="terms" className="text-sm leading-snug text-muted-foreground">
-                        I agree to the <span className="text-primary underline cursor-pointer">Terms of Service</span> and{" "}
+                        I agree to the{" "}
+                        <span className="text-primary underline cursor-pointer">Terms of Service</span> and{" "}
                         <span className="text-primary underline cursor-pointer">Privacy Policy</span>
                       </Label>
                     </div>
@@ -223,29 +290,79 @@ export default function SignUp() {
   );
 }
 
+// ─── Candidate Form ───────────────────────────────────────────────────────────
+
 function CandidateForm({
   data,
   setData,
 }: {
-  data: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    password: string;
-    phone: string;
-  };
-  setData: React.Dispatch<
-    React.SetStateAction<{
-      firstName: string;
-      lastName: string;
-      email: string;
-      password: string;
-      phone: string;
-    }>
-  >;
+  data: { firstName: string; lastName: string; email: string; password: string; phone: string };
+  setData: React.Dispatch<React.SetStateAction<{ firstName: string; lastName: string; email: string; password: string; phone: string }>>;
 }) {
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const { toast } = useToast();
+
+  const handleCVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setOcrLoading(true);
+    toast({ title: "Reading your CV…", description: "Extracting your details, please wait." });
+
+    try {
+      const rawText = await extractTextFromFile(file);
+      const { firstName, lastName, phone, email } = parseCV(rawText);
+
+      setData((prev) => ({
+        ...prev,
+        ...(firstName && { firstName }),
+        ...(lastName  && { lastName }),
+        ...(phone     && { phone }),
+        ...(email     && { email }),
+      }));
+
+      toast({
+        title: "CV scanned ✓",
+        description: "Fields filled in — please review and add your password.",
+      });
+    } catch (err) {
+      toast({
+        title: "OCR failed",
+        description: (err as Error).message ?? "Could not read the CV. Fill in manually.",
+        variant: "destructive",
+      });
+    } finally {
+      setOcrLoading(false);
+    }
+  };
+
   return (
     <>
+      {/* ── CV Upload ── */}
+      <div className="space-y-2">
+        <Label htmlFor="cv">Upload CV</Label>
+        <div className="relative">
+          <Input
+            id="cv"
+            type="file"
+            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+            className="cursor-pointer"
+            onChange={handleCVUpload}
+            disabled={ocrLoading}
+          />
+          {ocrLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/70 rounded-md">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <span className="ml-2 text-sm text-primary font-medium">Scanning CV…</span>
+            </div>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Accepted: PDF, DOC, DOCX, PNG, JPG (max 10 MB) · Fields will be auto-filled from your CV
+        </p>
+      </div>
+
+      {/* ── Name ── */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="firstName">First Name</Label>
@@ -268,6 +385,8 @@ function CandidateForm({
           />
         </div>
       </div>
+
+      {/* ── Email ── */}
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
         <Input
@@ -279,6 +398,8 @@ function CandidateForm({
           onChange={(e) => setData({ ...data, email: e.target.value })}
         />
       </div>
+
+      {/* ── Password (never auto-filled for security) ── */}
       <div className="space-y-2">
         <Label htmlFor="password">Password</Label>
         <Input
@@ -290,6 +411,8 @@ function CandidateForm({
           onChange={(e) => setData({ ...data, password: e.target.value })}
         />
       </div>
+
+      {/* ── Phone ── */}
       <div className="space-y-2">
         <Label htmlFor="phone">Phone Number</Label>
         <Input
@@ -300,6 +423,8 @@ function CandidateForm({
           onChange={(e) => setData({ ...data, phone: e.target.value })}
         />
       </div>
+
+      {/* ── Disability ── */}
       <div className="space-y-2">
         <Label htmlFor="disability">Disability Type</Label>
         <Select>
@@ -318,108 +443,62 @@ function CandidateForm({
           </SelectContent>
         </Select>
       </div>
+
+      {/* ── Accommodations ── */}
       <div className="space-y-2">
         <Label>Preferred Accommodations</Label>
         <Textarea
-          placeholder="e.g. Screen reader support, flexible hours, remote work..."
+          placeholder="e.g. Screen reader support, flexible hours, remote work…"
           className="resize-none"
           rows={3}
         />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="cv">Upload CV</Label>
-        <Input id="cv" type="file" accept=".pdf,.doc,.docx" className="cursor-pointer" />
-        <p className="text-xs text-muted-foreground">Accepted formats: PDF, DOC, DOCX (max 10MB)</p>
       </div>
     </>
   );
 }
 
+// ─── Corporate Form ───────────────────────────────────────────────────────────
+
 function CorporateForm({
   data,
   setData,
 }: {
-  data: {
-    companyName: string;
-    contactFirst: string;
-    contactLast: string;
-    email: string;
-    password: string;
-    phone: string;
-  };
-  setData: React.Dispatch<
-    React.SetStateAction<{
-      companyName: string;
-      contactFirst: string;
-      contactLast: string;
-      email: string;
-      password: string;
-      phone: string;
-    }>
-  >;
+  data: { companyName: string; contactFirst: string; contactLast: string; email: string; password: string; phone: string };
+  setData: React.Dispatch<React.SetStateAction<{ companyName: string; contactFirst: string; contactLast: string; email: string; password: string; phone: string }>>;
 }) {
   return (
     <>
       <div className="space-y-2">
         <Label htmlFor="companyName">Company Name</Label>
-        <Input
-          id="companyName"
-          placeholder="Acme Inc."
-          required
-          value={data.companyName}
-          onChange={(e) => setData({ ...data, companyName: e.target.value })}
-        />
+        <Input id="companyName" placeholder="Acme Inc." required value={data.companyName}
+          onChange={(e) => setData({ ...data, companyName: e.target.value })} />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="contactFirst">Contact First Name</Label>
-          <Input
-            id="contactFirst"
-            placeholder="Jane"
-            required
-            value={data.contactFirst}
-            onChange={(e) => setData({ ...data, contactFirst: e.target.value })}
-          />
+          <Input id="contactFirst" placeholder="Jane" required value={data.contactFirst}
+            onChange={(e) => setData({ ...data, contactFirst: e.target.value })} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="contactLast">Contact Last Name</Label>
-          <Input
-            id="contactLast"
-            placeholder="Smith"
-            required
-            value={data.contactLast}
-            onChange={(e) => setData({ ...data, contactLast: e.target.value })}
-          />
+          <Input id="contactLast" placeholder="Smith" required value={data.contactLast}
+            onChange={(e) => setData({ ...data, contactLast: e.target.value })} />
         </div>
       </div>
       <div className="space-y-2">
         <Label htmlFor="corpEmail">Work Email</Label>
-        <Input
-          id="corpEmail"
-          type="email"
-          placeholder="jane@acme.com"
-          required
-          value={data.email}
-          onChange={(e) => setData({ ...data, email: e.target.value })}
-        />
+        <Input id="corpEmail" type="email" placeholder="jane@acme.com" required value={data.email}
+          onChange={(e) => setData({ ...data, email: e.target.value })} />
       </div>
       <div className="space-y-2">
         <Label htmlFor="corpPassword">Password</Label>
-        <Input
-          id="corpPassword"
-          type="password"
-          placeholder="••••••••"
-          required
-          value={data.password}
-          onChange={(e) => setData({ ...data, password: e.target.value })}
-        />
+        <Input id="corpPassword" type="password" placeholder="••••••••" required value={data.password}
+          onChange={(e) => setData({ ...data, password: e.target.value })} />
       </div>
       <div className="space-y-2">
         <Label htmlFor="industry">Industry</Label>
         <Select>
-          <SelectTrigger id="industry">
-            <SelectValue placeholder="Select industry" />
-          </SelectTrigger>
+          <SelectTrigger id="industry"><SelectValue placeholder="Select industry" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="tech">Technology</SelectItem>
             <SelectItem value="healthcare">Healthcare</SelectItem>
@@ -436,9 +515,7 @@ function CorporateForm({
       <div className="space-y-2">
         <Label htmlFor="companySize">Company Size</Label>
         <Select>
-          <SelectTrigger id="companySize">
-            <SelectValue placeholder="Select company size" />
-          </SelectTrigger>
+          <SelectTrigger id="companySize"><SelectValue placeholder="Select company size" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="1-10">1–10 employees</SelectItem>
             <SelectItem value="11-50">11–50 employees</SelectItem>
@@ -450,13 +527,8 @@ function CorporateForm({
       </div>
       <div className="space-y-2">
         <Label htmlFor="corpPhone">Phone Number</Label>
-        <Input
-          id="corpPhone"
-          type="tel"
-          placeholder="+1 (555) 000-0000"
-          value={data.phone}
-          onChange={(e) => setData({ ...data, phone: e.target.value })}
-        />
+        <Input id="corpPhone" type="tel" placeholder="+1 (555) 000-0000" value={data.phone}
+          onChange={(e) => setData({ ...data, phone: e.target.value })} />
       </div>
     </>
   );
