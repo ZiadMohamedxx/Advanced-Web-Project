@@ -106,6 +106,9 @@ export default function SignUp() {
     email: "",
     password: "",
     phone: "",
+    disabilityType: "",
+    preferredAccommodations: "",
+    cv: null as File | null,
   });
 
   const [corporateData, setCorporateData] = useState({
@@ -115,6 +118,8 @@ export default function SignUp() {
     email: "",
     password: "",
     phone: "",
+    industry: "",
+    companySize: "",
   });
 
   const navigate = useNavigate();
@@ -123,28 +128,41 @@ export default function SignUp() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    let name = "";
-    let email = "";
-    let password = "";
-
-    if (userType === "candidate") {
-      name = `${candidateData.firstName} ${candidateData.lastName}`.trim();
-      email = candidateData.email;
-      password = candidateData.password;
-    }
-
-    if (userType === "corporate") {
-      name = corporateData.companyName.trim();
-      email = corporateData.email;
-      password = corporateData.password;
-    }
-
     try {
       setLoading(true);
+
+      const formData = new FormData();
+
+      if (userType === "candidate") {
+        formData.append("role", "candidate");
+        formData.append("name", `${candidateData.firstName} ${candidateData.lastName}`.trim());
+        formData.append("email", candidateData.email);
+        formData.append("password", candidateData.password);
+        formData.append("phone", candidateData.phone);
+        formData.append("disabilityType", candidateData.disabilityType);
+        formData.append("preferredAccommodations", candidateData.preferredAccommodations);
+
+        if (candidateData.cv) {
+          formData.append("cv", candidateData.cv);
+        }
+      }
+
+      if (userType === "corporate") {
+        formData.append("role", "corporate");
+        formData.append("name", corporateData.companyName);
+        formData.append("email", corporateData.email);
+        formData.append("password", corporateData.password);
+        formData.append("phone", corporateData.phone);
+        formData.append("companyName", corporateData.companyName);
+        formData.append("contactFirstName", corporateData.contactFirst);
+        formData.append("contactLastName", corporateData.contactLast);
+        formData.append("industry", corporateData.industry);
+        formData.append("companySize", corporateData.companySize);
+      }
+
       const response = await fetch(`${API_BASE_URL}/auth/signup`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: formData,
       });
 
       const data = await response.json();
@@ -296,8 +314,28 @@ function CandidateForm({
   data,
   setData,
 }: {
-  data: { firstName: string; lastName: string; email: string; password: string; phone: string };
-  setData: React.Dispatch<React.SetStateAction<{ firstName: string; lastName: string; email: string; password: string; phone: string }>>;
+  data: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+    phone: string;
+    disabilityType: string;
+    preferredAccommodations: string;
+    cv: File | null;
+  };
+  setData: React.Dispatch<
+    React.SetStateAction<{
+      firstName: string;
+      lastName: string;
+      email: string;
+      password: string;
+      phone: string;
+      disabilityType: string;
+      preferredAccommodations: string;
+      cv: File | null;
+    }>
+  >;
 }) {
   const [ocrLoading, setOcrLoading] = useState(false);
   const { toast } = useToast();
@@ -305,6 +343,13 @@ function CandidateForm({
   const handleCVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Store the file in state for FormData submission
+    setData((prev) => ({ ...prev, cv: file }));
+
+    // Only run OCR on image/PDF files that ocr.space can handle
+    const ocrSupported = ["image/png", "image/jpeg", "image/jpg", "application/pdf"];
+    if (!ocrSupported.includes(file.type)) return;
 
     setOcrLoading(true);
     toast({ title: "Reading your CV…", description: "Extracting your details, please wait." });
@@ -315,6 +360,7 @@ function CandidateForm({
 
       setData((prev) => ({
         ...prev,
+        cv: file,
         ...(firstName && { firstName }),
         ...(lastName  && { lastName }),
         ...(phone     && { phone }),
@@ -427,7 +473,10 @@ function CandidateForm({
       {/* ── Disability ── */}
       <div className="space-y-2">
         <Label htmlFor="disability">Disability Type</Label>
-        <Select>
+        <Select
+          value={data.disabilityType}
+          onValueChange={(value) => setData({ ...data, disabilityType: value })}
+        >
           <SelectTrigger id="disability">
             <SelectValue placeholder="Select disability type" />
           </SelectTrigger>
@@ -451,6 +500,8 @@ function CandidateForm({
           placeholder="e.g. Screen reader support, flexible hours, remote work…"
           className="resize-none"
           rows={3}
+          value={data.preferredAccommodations}
+          onChange={(e) => setData({ ...data, preferredAccommodations: e.target.value })}
         />
       </div>
     </>
@@ -463,8 +514,28 @@ function CorporateForm({
   data,
   setData,
 }: {
-  data: { companyName: string; contactFirst: string; contactLast: string; email: string; password: string; phone: string };
-  setData: React.Dispatch<React.SetStateAction<{ companyName: string; contactFirst: string; contactLast: string; email: string; password: string; phone: string }>>;
+  data: {
+    companyName: string;
+    contactFirst: string;
+    contactLast: string;
+    email: string;
+    password: string;
+    phone: string;
+    industry: string;
+    companySize: string;
+  };
+  setData: React.Dispatch<
+    React.SetStateAction<{
+      companyName: string;
+      contactFirst: string;
+      contactLast: string;
+      email: string;
+      password: string;
+      phone: string;
+      industry: string;
+      companySize: string;
+    }>
+  >;
 }) {
   return (
     <>
@@ -497,7 +568,10 @@ function CorporateForm({
       </div>
       <div className="space-y-2">
         <Label htmlFor="industry">Industry</Label>
-        <Select>
+        <Select
+          value={data.industry}
+          onValueChange={(value) => setData({ ...data, industry: value })}
+        >
           <SelectTrigger id="industry"><SelectValue placeholder="Select industry" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="tech">Technology</SelectItem>
@@ -514,7 +588,10 @@ function CorporateForm({
       </div>
       <div className="space-y-2">
         <Label htmlFor="companySize">Company Size</Label>
-        <Select>
+        <Select
+          value={data.companySize}
+          onValueChange={(value) => setData({ ...data, companySize: value })}
+        >
           <SelectTrigger id="companySize"><SelectValue placeholder="Select company size" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="1-10">1–10 employees</SelectItem>
