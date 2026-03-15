@@ -16,6 +16,7 @@ import ApplyJob from "./pages/ApplyJob";
 import PostJob from "./pages/PostJob";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
+import EmployerDashboard from "./pages/Employerdashboard";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const App = () => (
   <Route path="/signup" element={<SignUp />} />
   <Route path="/signin" element={<SignIn />} />
   <Route path="/profile" element={<Profile />} />
+  <Route path="/employer-dashboard" element={<EmployerDashboard />} />
   <Route path="/apply/:jobId" element={<ApplyJob />} />
   <Route path="/post-job" element={<PostJob />} />
           </Route>
