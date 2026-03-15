@@ -7,7 +7,7 @@ import authRoutes from "./Routers/auth.js";
 import jobRoutes from "./Routers/job.js"; 
 
 dotenv.config();
-///sassssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss
+
 const app = express();
 const port = 4000;
 
