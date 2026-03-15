@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Accessibility, Sun, Moon } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Menu, X, Accessibility, Sun, Moon, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 const navLinks = [
   { label: "Home", to: "/" },
@@ -14,8 +15,37 @@ const navLinks = [
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
-  const location = useLocation();
   const [highContrast, setHighContrast] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState("");
+
+  const location = useLocation();
+  const navigate  = useNavigate();
+  const { toast } = useToast();
+
+  // ── Check auth on every route change ──
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const user  = localStorage.getItem("user");
+
+    if (token && user) {
+      const parsed = JSON.parse(user);
+      setIsLoggedIn(true);
+      setUserName(parsed.name || "");
+    } else {
+      setIsLoggedIn(false);
+      setUserName("");
+    }
+  }, [location.pathname]); // re-run on every page change
+
+  const handleSignOut = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setIsLoggedIn(false);
+    setUserName("");
+    toast({ title: "Signed out", description: "You have been signed out successfully." });
+    navigate("/");
+  };
 
   const toggleContrast = () => {
     setHighContrast(!highContrast);
@@ -34,7 +64,7 @@ export default function Navbar() {
           <span className="text-gradient">InclusiveHire</span>
         </Link>
 
-        {/* Desktop */}
+        {/* Desktop nav links */}
         <div className="hidden md:flex items-center gap-1">
           {navLinks.map((link) => (
             <Link
@@ -51,6 +81,7 @@ export default function Navbar() {
           ))}
         </div>
 
+        {/* Desktop auth buttons */}
         <div className="hidden md:flex items-center gap-2">
           <Button
             variant="ghost"
@@ -60,12 +91,33 @@ export default function Navbar() {
           >
             {highContrast ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
-          <Link to="/signin">
-            <Button variant="outline" size="sm">Sign In</Button>
-          </Link>
-          <Link to="/signup">
-            <Button size="sm">Get Started</Button>
-          </Link>
+
+          {isLoggedIn ? (
+            <>
+              {/* Show user's name */}
+              <span className="text-sm text-muted-foreground font-medium px-2">
+                Hi, {userName.split(" ")[0]}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 text-red-600 border-red-200 hover:bg-red-50"
+                onClick={handleSignOut}
+              >
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </Button>
+            </>
+          ) : (
+            <>
+              <Link to="/signin">
+                <Button variant="outline" size="sm">Sign In</Button>
+              </Link>
+              <Link to="/signup">
+                <Button size="sm">Get Started</Button>
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile toggle */}
@@ -100,9 +152,27 @@ export default function Navbar() {
             <Button variant="outline" size="sm" className="flex-1" onClick={toggleContrast}>
               {highContrast ? "Standard" : "High Contrast"}
             </Button>
-            <Link to="/signup" className="flex-1">
-              <Button size="sm" className="w-full">Get Started</Button>
-            </Link>
+
+            {isLoggedIn ? (
+              <Button
+                size="sm"
+                className="flex-1 gap-2 text-red-600 border-red-200"
+                variant="outline"
+                onClick={() => { handleSignOut(); setOpen(false); }}
+              >
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </Button>
+            ) : (
+              <>
+                <Link to="/signin" className="flex-1" onClick={() => setOpen(false)}>
+                  <Button variant="outline" size="sm" className="w-full">Sign In</Button>
+                </Link>
+                <Link to="/signup" className="flex-1" onClick={() => setOpen(false)}>
+                  <Button size="sm" className="w-full">Get Started</Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}
