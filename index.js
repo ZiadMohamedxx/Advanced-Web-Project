@@ -15,6 +15,9 @@ connection();
 app.use(cors());
 app.use(express.json());
 
+// ✅ Serve uploaded CVs as static files (optional but useful)
+app.use("/uploads", express.static("uploads"));
+
 app.get("/", (req, res) => {
   res.send("Server side for your application is now running...");
 });
