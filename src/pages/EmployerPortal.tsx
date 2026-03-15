@@ -1,11 +1,11 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import {
   Building2, FileText, SlidersHorizontal, Users, BarChart3,
-  CheckCircle2, Star, ArrowRight
+  CheckCircle2, Star, ArrowRight, LayoutDashboard
 } from "lucide-react";
 
 const features = [
@@ -30,6 +30,8 @@ const fadeUp = {
 } as const;
 
 export default function EmployerPortal() {
+  const navigate = useNavigate();
+
   return (
     <div>
       <section className="relative overflow-hidden" aria-labelledby="employer-heading">
@@ -47,8 +49,21 @@ export default function EmployerPortal() {
                 Post inclusive job listings, define accommodations, and discover pre-matched candidates through AI-powered compatibility scoring.
               </p>
               <div className="flex gap-3">
-                <Link to="/post-job"><Button size="lg" className="gap-2">Post a Job <ArrowRight className="h-4 w-4" /></Button></Link>
-                <Button size="lg" variant="outline">View Dashboard</Button>
+                <Link to="/post-job">
+                  <Button size="lg" className="gap-2">
+                    Post a Job <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+                {/* ✅ This now navigates to the real dashboard */}
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => navigate("/employer-dashboard")}
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                  View Dashboard
+                </Button>
               </div>
             </motion.div>
           </div>
@@ -79,12 +94,15 @@ export default function EmployerPortal() {
         </div>
       </section>
 
-      {/* Sample Dashboard */}
+      {/* Sample Dashboard Preview */}
       <section className="bg-secondary/30 py-16" aria-labelledby="dashboard-heading">
         <div className="container">
-          <h2 id="dashboard-heading" className="text-2xl md:text-3xl font-bold mb-8 text-center">
+          <h2 id="dashboard-heading" className="text-2xl md:text-3xl font-bold mb-2 text-center">
             Matched Candidates Dashboard
           </h2>
+          <p className="text-center text-muted-foreground mb-8 text-sm">
+            Preview — open your real dashboard to see actual applicants.
+          </p>
           <div className="max-w-3xl mx-auto space-y-4">
             {sampleCandidates.map((c, i) => (
               <motion.div key={c.name} custom={i} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}>
@@ -118,6 +136,18 @@ export default function EmployerPortal() {
                 </Card>
               </motion.div>
             ))}
+          </div>
+
+          {/* CTA to open real dashboard */}
+          <div className="text-center mt-8">
+            <Button
+              size="lg"
+              className="gap-2"
+              onClick={() => navigate("/employer-dashboard")}
+            >
+              <LayoutDashboard className="h-4 w-4" />
+              Open My Real Dashboard
+            </Button>
           </div>
         </div>
       </section>
