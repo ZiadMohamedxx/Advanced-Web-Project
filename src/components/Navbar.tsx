@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X, Accessibility, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { API_BASE_URL } from "@/lib/api";
 
 const navLinks = [
   { label: "Home", to: "/" },
@@ -12,15 +13,58 @@ const navLinks = [
   { label: "About", to: "/about" },
 ];
 
+type StoredUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  profileImage?: string;
+};
+
 export default function Navbar() {
   const [open, setOpen] = useState(false);
-  const location = useLocation();
   const [highContrast, setHighContrast] = useState(false);
+  const [user, setUser] = useState<StoredUser | null>(null);
+
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const syncUser = () => {
+      const storedUser = localStorage.getItem("user");
+
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      } else {
+        setUser(null);
+      }
+    };
+
+    syncUser();
+
+    window.addEventListener("storage", syncUser);
+
+    return () => {
+      window.removeEventListener("storage", syncUser);
+    };
+  }, [location.pathname]);
 
   const toggleContrast = () => {
     setHighContrast(!highContrast);
     document.documentElement.classList.toggle("dark");
   };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setUser(null);
+    navigate("/");
+  };
+
+  const profileImageUrl =
+    user?.profileImage && user.profileImage.trim() !== ""
+      ? `${API_BASE_URL}/${user.profileImage.replace(/\\/g, "/")}`
+      : "";
 
   return (
     <nav
@@ -34,7 +78,6 @@ export default function Navbar() {
           <span className="text-gradient">InclusiveHire</span>
         </Link>
 
-        {/* Desktop */}
         <div className="hidden md:flex items-center gap-1">
           {navLinks.map((link) => (
             <Link
@@ -60,15 +103,43 @@ export default function Navbar() {
           >
             {highContrast ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
-          <Link to="/signin">
-            <Button variant="outline" size="sm">Sign In</Button>
-          </Link>
-          <Link to="/signup">
-            <Button size="sm">Get Started</Button>
-          </Link>
+
+          {user ? (
+            <>
+              <button
+                onClick={() => navigate("/profile")}
+                className="flex items-center gap-2 rounded-full border px-3 py-1.5 hover:bg-secondary transition-colors"
+              >
+                {profileImageUrl ? (
+                  <img
+                    src={profileImageUrl}
+                    alt="Profile"
+                    className="h-8 w-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+                    {user.name?.charAt(0)?.toUpperCase()}
+                  </div>
+                )}
+                <span className="text-sm font-medium">{user.name}</span>
+              </button>
+
+              <Button variant="outline" size="sm" onClick={handleLogout}>
+                Logout
+              </Button>
+            </>
+          ) : (
+            <>
+              <Link to="/signin">
+                <Button variant="outline" size="sm">Sign In</Button>
+              </Link>
+              <Link to="/signup">
+                <Button size="sm">Get Started</Button>
+              </Link>
+            </>
+          )}
         </div>
 
-        {/* Mobile toggle */}
         <button
           className="md:hidden p-2"
           onClick={() => setOpen(!open)}
@@ -79,7 +150,6 @@ export default function Navbar() {
         </button>
       </div>
 
-      {/* Mobile menu */}
       {open && (
         <div className="md:hidden border-t bg-background p-4 space-y-2">
           {navLinks.map((link) => (
@@ -96,14 +166,49 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
-          <div className="flex gap-2 pt-2">
-            <Button variant="outline" size="sm" className="flex-1" onClick={toggleContrast}>
-              {highContrast ? "Standard" : "High Contrast"}
-            </Button>
-            <Link to="/signup" className="flex-1">
-              <Button size="sm" className="w-full">Get Started</Button>
-            </Link>
-          </div>
+
+          {user ? (
+            <div className="space-y-2 pt-2">
+              <button
+                onClick={() => {
+                  navigate("/profile");
+                  setOpen(false);
+                }}
+                className="w-full flex items-center gap-2 rounded-md border px-3 py-2 hover:bg-secondary"
+              >
+                {profileImageUrl ? (
+                  <img
+                    src={profileImageUrl}
+                    alt="Profile"
+                    className="h-8 w-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+                    {user.name?.charAt(0)?.toUpperCase()}
+                  </div>
+                )}
+                <span>{user.name}</span>
+              </button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={handleLogout}
+              >
+                Logout
+              </Button>
+            </div>
+          ) : (
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" size="sm" className="flex-1" onClick={toggleContrast}>
+                {highContrast ? "Standard" : "High Contrast"}
+              </Button>
+              <Link to="/signup" className="flex-1">
+                <Button size="sm" className="w-full">Get Started</Button>
+              </Link>
+            </div>
+          )}
         </div>
       )}
     </nav>
