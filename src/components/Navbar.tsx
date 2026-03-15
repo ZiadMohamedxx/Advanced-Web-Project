@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, Accessibility, Sun, Moon, LogOut } from "lucide-react";
+import { Menu, X, Accessibility, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+import { API_BASE_URL } from "@/lib/api";
 
 const navLinks = [
   { label: "Home", to: "/" },
@@ -13,44 +13,58 @@ const navLinks = [
   { label: "About", to: "/about" },
 ];
 
+type StoredUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  profileImage?: string;
+};
+
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [highContrast, setHighContrast] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userName, setUserName] = useState("");
+  const [user, setUser] = useState<StoredUser | null>(null);
 
   const location = useLocation();
-  const navigate  = useNavigate();
-  const { toast } = useToast();
+  const navigate = useNavigate();
 
-  // ── Check auth on every route change ──
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const user  = localStorage.getItem("user");
+    const syncUser = () => {
+      const storedUser = localStorage.getItem("user");
 
-    if (token && user) {
-      const parsed = JSON.parse(user);
-      setIsLoggedIn(true);
-      setUserName(parsed.name || "");
-    } else {
-      setIsLoggedIn(false);
-      setUserName("");
-    }
-  }, [location.pathname]); // re-run on every page change
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      } else {
+        setUser(null);
+      }
+    };
 
-  const handleSignOut = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setIsLoggedIn(false);
-    setUserName("");
-    toast({ title: "Signed out", description: "You have been signed out successfully." });
-    navigate("/");
-  };
+    syncUser();
+
+    window.addEventListener("storage", syncUser);
+
+    return () => {
+      window.removeEventListener("storage", syncUser);
+    };
+  }, [location.pathname]);
 
   const toggleContrast = () => {
     setHighContrast(!highContrast);
     document.documentElement.classList.toggle("dark");
   };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setUser(null);
+    navigate("/");
+  };
+
+  const profileImageUrl =
+    user?.profileImage && user.profileImage.trim() !== ""
+      ? `${API_BASE_URL}/${user.profileImage.replace(/\\/g, "/")}`
+      : "";
 
   return (
     <nav
@@ -64,7 +78,6 @@ export default function Navbar() {
           <span className="text-gradient">InclusiveHire</span>
         </Link>
 
-        {/* Desktop nav links */}
         <div className="hidden md:flex items-center gap-1">
           {navLinks.map((link) => (
             <Link
@@ -81,7 +94,6 @@ export default function Navbar() {
           ))}
         </div>
 
-        {/* Desktop auth buttons */}
         <div className="hidden md:flex items-center gap-2">
           <Button
             variant="ghost"
@@ -92,20 +104,28 @@ export default function Navbar() {
             {highContrast ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
 
-          {isLoggedIn ? (
+          {user ? (
             <>
-              {/* Show user's name */}
-              <span className="text-sm text-muted-foreground font-medium px-2">
-                Hi, {userName.split(" ")[0]}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2 text-red-600 border-red-200 hover:bg-red-50"
-                onClick={handleSignOut}
+              <button
+                onClick={() => navigate("/profile")}
+                className="flex items-center gap-2 rounded-full border px-3 py-1.5 hover:bg-secondary transition-colors"
               >
-                <LogOut className="h-4 w-4" />
-                Sign Out
+                {profileImageUrl ? (
+                  <img
+                    src={profileImageUrl}
+                    alt="Profile"
+                    className="h-8 w-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+                    {user.name?.charAt(0)?.toUpperCase()}
+                  </div>
+                )}
+                <span className="text-sm font-medium">{user.name}</span>
+              </button>
+
+              <Button variant="outline" size="sm" onClick={handleLogout}>
+                Logout
               </Button>
             </>
           ) : (
@@ -120,7 +140,6 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Mobile toggle */}
         <button
           className="md:hidden p-2"
           onClick={() => setOpen(!open)}
@@ -131,7 +150,6 @@ export default function Navbar() {
         </button>
       </div>
 
-      {/* Mobile menu */}
       {open && (
         <div className="md:hidden border-t bg-background p-4 space-y-2">
           {navLinks.map((link) => (
@@ -148,32 +166,49 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
-          <div className="flex gap-2 pt-2">
-            <Button variant="outline" size="sm" className="flex-1" onClick={toggleContrast}>
-              {highContrast ? "Standard" : "High Contrast"}
-            </Button>
 
-            {isLoggedIn ? (
-              <Button
-                size="sm"
-                className="flex-1 gap-2 text-red-600 border-red-200"
-                variant="outline"
-                onClick={() => { handleSignOut(); setOpen(false); }}
+          {user ? (
+            <div className="space-y-2 pt-2">
+              <button
+                onClick={() => {
+                  navigate("/profile");
+                  setOpen(false);
+                }}
+                className="w-full flex items-center gap-2 rounded-md border px-3 py-2 hover:bg-secondary"
               >
-                <LogOut className="h-4 w-4" />
-                Sign Out
+                {profileImageUrl ? (
+                  <img
+                    src={profileImageUrl}
+                    alt="Profile"
+                    className="h-8 w-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+                    {user.name?.charAt(0)?.toUpperCase()}
+                  </div>
+                )}
+                <span>{user.name}</span>
+              </button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={handleLogout}
+              >
+                Logout
               </Button>
-            ) : (
-              <>
-                <Link to="/signin" className="flex-1" onClick={() => setOpen(false)}>
-                  <Button variant="outline" size="sm" className="w-full">Sign In</Button>
-                </Link>
-                <Link to="/signup" className="flex-1" onClick={() => setOpen(false)}>
-                  <Button size="sm" className="w-full">Get Started</Button>
-                </Link>
-              </>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" size="sm" className="flex-1" onClick={toggleContrast}>
+                {highContrast ? "Standard" : "High Contrast"}
+              </Button>
+              <Link to="/signup" className="flex-1">
+                <Button size="sm" className="w-full">Get Started</Button>
+              </Link>
+            </div>
+          )}
         </div>
       )}
     </nav>

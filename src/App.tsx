@@ -15,7 +15,7 @@ import SignIn from "./pages/SignIn";
 import ApplyJob from "./pages/ApplyJob";
 import PostJob from "./pages/PostJob";
 import NotFound from "./pages/NotFound";
-import EmployerDashboard from "./pages/Employerdashboard"; 
+import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient();
 
@@ -26,18 +26,18 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route element={<Layout />}>
-            <Route path="/" element={<Index />} />
-            <Route path="/candidate-portal" element={<CandidatePortal />} />
-            <Route path="/employer-portal" element={<EmployerPortal />} />
-            <Route path="/jobs" element={<Jobs />} />
-            <Route path="/accessibility" element={<AccessibilityPage />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/signup" element={<SignUp />} />
-            <Route path="/signin" element={<SignIn />} />
-            <Route path="/apply/:jobId" element={<ApplyJob />} />
-            <Route path="/post-job" element={<PostJob />} />
-            <Route path="/employer-dashboard" element={<EmployerDashboard />} /> 
+        <Route element={<Layout />}>
+  <Route path="/" element={<Index />} />
+  <Route path="/candidate-portal" element={<CandidatePortal />} />
+  <Route path="/employer-portal" element={<EmployerPortal />} />
+  <Route path="/jobs" element={<Jobs />} />
+  <Route path="/accessibility" element={<AccessibilityPage />} />
+  <Route path="/about" element={<About />} />
+  <Route path="/signup" element={<SignUp />} />
+  <Route path="/signin" element={<SignIn />} />
+  <Route path="/profile" element={<Profile />} />
+  <Route path="/apply/:jobId" element={<ApplyJob />} />
+  <Route path="/post-job" element={<PostJob />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

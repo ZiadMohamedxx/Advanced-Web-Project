@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 
 const UserSchema = new mongoose.Schema(
   {
-    // ─── Shared ───────────────────────────────────────────────────────────────
     role: {
       type: String,
       enum: ["candidate", "corporate"],
@@ -29,7 +28,6 @@ const UserSchema = new mongoose.Schema(
       default: "",
     },
 
-    // ─── Candidate-only ───────────────────────────────────────────────────────
     disabilityType: {
       type: String,
       default: "",
@@ -43,7 +41,6 @@ const UserSchema = new mongoose.Schema(
       default: null,
     },
 
-    // ─── Corporate-only ───────────────────────────────────────────────────────
     companyName: {
       type: String,
       default: "",
@@ -61,6 +58,11 @@ const UserSchema = new mongoose.Schema(
       default: "",
     },
     companySize: {
+      type: String,
+      default: "",
+    },
+
+    profileImage: {
       type: String,
       default: "",
     },

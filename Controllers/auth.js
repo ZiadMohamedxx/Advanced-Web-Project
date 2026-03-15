@@ -2,19 +2,35 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../Models/user.js";
 import multer from "multer";
-import path from "path";
 import fs from "fs";
 
-// ─── Multer Setup ─────────────────────────────────────────────────────────────
-
-const uploadDir = "uploads/cvs";
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+// CV upload folder
+const cvUploadDir = "uploads/cvs";
+if (!fs.existsSync(cvUploadDir)) {
+  fs.mkdirSync(cvUploadDir, { recursive: true });
 }
 
-const storage = multer.diskStorage({
+// Profile image upload folder
+const profileUploadDir = "uploads/profiles";
+if (!fs.existsSync(profileUploadDir)) {
+  fs.mkdirSync(profileUploadDir, { recursive: true });
+}
+
+// CV storage
+const cvStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadDir);
+    cb(null, cvUploadDir);
+  },
+  filename: (req, file, cb) => {
+    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(null, `${unique}-${file.originalname}`);
+  },
+});
+
+// Profile image storage
+const profileStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, profileUploadDir);
   },
   filename: (req, file, cb) => {
     const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
@@ -23,8 +39,8 @@ const storage = multer.diskStorage({
 });
 
 export const upload = multer({
-  storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+  storage: cvStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowed = [
       "application/pdf",
@@ -33,6 +49,7 @@ export const upload = multer({
       "image/png",
       "image/jpeg",
     ];
+
     if (allowed.includes(file.mimetype)) {
       cb(null, true);
     } else {
@@ -41,7 +58,38 @@ export const upload = multer({
   },
 });
 
-// ─── Signup ───────────────────────────────────────────────────────────────────
+export const uploadProfileImage = multer({
+  storage: profileStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only image files are allowed"));
+    }
+  },
+});
+
+const buildUserResponse = (user) => {
+  return {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    phone: user.phone,
+    disabilityType: user.disabilityType,
+    preferredAccommodations: user.preferredAccommodations,
+    cvPath: user.cvPath,
+    companyName: user.companyName,
+    contactFirstName: user.contactFirstName,
+    contactLastName: user.contactLastName,
+    industry: user.industry,
+    companySize: user.companySize,
+    profileImage: user.profileImage,
+  };
+};
 
 const signup = async (req, res) => {
   try {
@@ -51,24 +99,21 @@ const signup = async (req, res) => {
       email,
       password,
       phone,
-
-      // candidate-only
       disabilityType,
       preferredAccommodations,
-
-      // corporate-only
       companyName,
       contactFirstName,
       contactLastName,
       industry,
       companySize,
-    } = req.body;  // ✅ req.body now works because multer parsed the multipart form
+    } = req.body;
 
     if (!role || !email || !password) {
       return res.status(400).json({ message: "Please provide role, email and password" });
     }
 
     const existingUser = await User.findOne({ email });
+
     if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
     }
@@ -92,7 +137,6 @@ const signup = async (req, res) => {
         preferredAccommodations: preferredAccommodations || "",
         cvPath: req.file ? req.file.path : null,
       });
-
     } else if (role === "corporate") {
       if (!companyName || !contactFirstName || !contactLastName) {
         return res.status(400).json({ message: "Please provide company name and contact name" });
@@ -110,7 +154,6 @@ const signup = async (req, res) => {
         industry: industry || "",
         companySize: companySize || "",
       });
-
     } else {
       return res.status(400).json({ message: `Unknown role: ${role}` });
     }
@@ -123,22 +166,14 @@ const signup = async (req, res) => {
 
     res.status(201).json({
       message: "User registered successfully",
-      user: {
-        id: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
-      },
+      user: buildUserResponse(newUser),
       token,
     });
-
   } catch (error) {
     console.log(error.message);
     res.status(500).json({ message: error.message });
   }
 };
-
-// ─── Login ────────────────────────────────────────────────────────────────────
 
 const login = async (req, res) => {
   try {
@@ -149,11 +184,13 @@ const login = async (req, res) => {
     }
 
     const user = await User.findOne({ email });
+
     if (!user) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
+
     if (!isPasswordCorrect) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
@@ -166,19 +203,132 @@ const login = async (req, res) => {
 
     res.status(200).json({
       message: "Login successful",
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
+      user: buildUserResponse(user),
       token,
     });
-
   } catch (error) {
     console.log(error.message);
     res.status(500).json({ message: error.message });
   }
 };
 
-export { signup, login };
+const getProfile = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findById(id).select("-password");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const updateProfile = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const {
+      name,
+      phone,
+      disabilityType,
+      preferredAccommodations,
+      companyName,
+      contactFirstName,
+      contactLastName,
+      industry,
+      companySize,
+    } = req.body;
+
+    const user = await User.findById(id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (name !== undefined) {
+      user.name = name;
+    }
+
+    if (phone !== undefined) {
+      user.phone = phone;
+    }
+
+    if (user.role === "candidate") {
+      if (disabilityType !== undefined) {
+        user.disabilityType = disabilityType;
+      }
+
+      if (preferredAccommodations !== undefined) {
+        user.preferredAccommodations = preferredAccommodations;
+      }
+    }
+
+    if (user.role === "corporate") {
+      if (companyName !== undefined) {
+        user.companyName = companyName;
+        user.name = companyName;
+      }
+
+      if (contactFirstName !== undefined) {
+        user.contactFirstName = contactFirstName;
+      }
+
+      if (contactLastName !== undefined) {
+        user.contactLastName = contactLastName;
+      }
+
+      if (industry !== undefined) {
+        user.industry = industry;
+      }
+
+      if (companySize !== undefined) {
+        user.companySize = companySize;
+      }
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      message: "Profile updated successfully",
+      user: buildUserResponse(user),
+    });
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const uploadProfilePicture = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findById(id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ message: "Please upload an image" });
+    }
+
+    user.profileImage = req.file.path;
+    await user.save();
+
+    res.status(200).json({
+      message: "Profile image uploaded successfully",
+      user: buildUserResponse(user),
+    });
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export { signup, login, getProfile, updateProfile, uploadProfilePicture };
