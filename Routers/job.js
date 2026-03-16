@@ -7,20 +7,19 @@ import {
   getAllJobs,
   applyForJob,
   getMyApplications,
+  closeJob,
 } from "../Controllers/job.js";
 import authMiddleware from "../Middleware/auth.js";
 
 const router = express.Router();
 
-// ─── Employer routes ──────────────────────────────────────────────────────────
-router.post("/", authMiddleware, postJob);                                        // POST   /jobs
-router.get("/my-jobs", authMiddleware, getMyJobs);                                // GET    /jobs/my-jobs
-router.get("/dashboard", authMiddleware, getEmployerDashboard);                   // GET    /jobs/dashboard
-router.patch("/applications/:applicationId", authMiddleware, updateApplicationStatus); // PATCH  /jobs/applications/:id
-
-// ─── Candidate routes ─────────────────────────────────────────────────────────
-router.get("/", authMiddleware, getAllJobs);                                       // GET    /jobs
-router.post("/:jobId/apply", authMiddleware, applyForJob);                        // POST   /jobs/:jobId/apply
-router.get("/my-applications", authMiddleware, getMyApplications);                // GET    /jobs/my-applications
+router.post("/", authMiddleware, postJob);
+router.get("/my-jobs", authMiddleware, getMyJobs);
+router.get("/dashboard", authMiddleware, getEmployerDashboard);
+router.patch("/applications/:applicationId", authMiddleware, updateApplicationStatus);
+router.get("/my-applications", authMiddleware, getMyApplications);
+router.get("/", authMiddleware, getAllJobs);
+router.post("/:jobId/apply", authMiddleware, applyForJob);
+router.patch("/:jobId/close", authMiddleware, closeJob);
 
 export default router;
