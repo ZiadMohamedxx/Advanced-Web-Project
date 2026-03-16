@@ -272,7 +272,7 @@ const updateProfile = async (req, res) => {
     if (user.role === "corporate") {
       if (companyName !== undefined) {
         user.companyName = companyName;
-        user.name = companyName;
+        user.name = name ; 
       }
 
       if (contactFirstName !== undefined) {

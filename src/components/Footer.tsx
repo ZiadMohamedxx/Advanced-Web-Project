@@ -1,34 +1,83 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Accessibility } from "lucide-react";
 
-const footerLinks = [
+const guestLinks = [
   {
     title: "Platform",
     links: [
-      { label: "Find Jobs", to: "/jobs" },
+      { label: "Find Jobs",        to: "/jobs" },
       { label: "Candidate Portal", to: "/candidate-portal" },
-      { label: "Employer Portal", to: "/employer-portal" },
+      { label: "Employer Portal",  to: "/employer-portal" },
     ],
   },
   {
     title: "Resources",
     links: [
       { label: "Accessibility", to: "/accessibility" },
-      { label: "About Us", to: "/about" },
-      { label: "AI Features", to: "/about" },
+      { label: "About Us",      to: "/about" },
+      { label: "AI Features",   to: "/about" },
     ],
   },
   {
     title: "Support",
     links: [
-      { label: "Help Center", to: "/" },
-      { label: "Contact Us", to: "/" },
+      { label: "Help Center",    to: "/" },
+      { label: "Contact Us",     to: "/" },
       { label: "Privacy Policy", to: "/" },
     ],
   },
 ];
 
+const candidateFooterLinks = [
+  {
+    title: "My Space",
+    links: [
+      { label: "Home",       to: "/jobs" },
+      { label: "My Profile", to: "/candidate-portal" },
+    ],
+  },
+  {
+    title: "Resources",
+    links: [
+      { label: "About", to: "/about" },
+    ],
+  },
+];
+
+const corporateFooterLinks = [
+  {
+    title: "My Space",
+    links: [
+      { label: "Home",         to: "/employer-portal" },
+      { label: "Post a Job",   to: "/post-job" },
+      { label: "My Dashboard", to: "/employer-dashboard" },
+    ],
+  },
+  {
+    title: "Resources",
+    links: [
+      { label: "About", to: "/about" },
+    ],
+  },
+];
+
 export default function Footer() {
+  const [role, setRole] = useState<"candidate" | "corporate" | null>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("user");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      setRole(parsed.role === "corporate" ? "corporate" : parsed.role === "candidate" ? "candidate" : null);
+    }
+  }, []);
+
+  const footerLinks =
+    role === "candidate" ? candidateFooterLinks :
+    role === "corporate" ? corporateFooterLinks :
+    guestLinks;
+
   return (
     <footer className="border-t bg-secondary/50" role="contentinfo">
       <div className="container py-12">

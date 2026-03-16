@@ -1,4 +1,4 @@
-import Job from "../Models/Job.js";
+import Job from "../Models/job.js";
 import Application from "../Models/application.js";
 import User from "../Models/user.js";
 
@@ -105,7 +105,26 @@ export const updateApplicationStatus = async (req, res) => {
   }
 };
 
-// ─── CANDIDATE: Get all open jobs ─────────────────────────────────────────────
+// ─── EMPLOYER: Close a job ────────────────────────────────────────────────────
+export const closeJob = async (req, res) => {
+  try {
+    const { jobId } = req.params;
+    console.log("Closing job:", jobId); // ← add this line temporarily
+
+    const job = await Job.findById(jobId);
+    console.log("Job found:", job);    // ← add this line temporarily
+
+    if (!job) return res.status(404).json({ message: "Job not found." });
+    if (job.employer.toString() !== req.userId) return res.status(403).json({ message: "Unauthorized." });
+
+    job.status = "closed";
+    await job.save();
+
+    res.status(200).json({ message: "Job closed successfully.", job });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 export const getAllJobs = async (req, res) => {
   try {
     const jobs = await Job.find({ status: "open" })
