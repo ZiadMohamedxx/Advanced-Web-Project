@@ -1,6 +1,7 @@
 import Job from "../Models/job.js";
 import Application from "../Models/application.js";
 import User from "../Models/user.js";
+import sendEmail from "../utils/sendEmail.js";
 
 // ─── EMPLOYER: Post a new job ─────────────────────────────────────────────────
 export const postJob = async (req, res) => {
@@ -142,17 +143,17 @@ export const applyForJob = async (req, res) => {
   try {
     const { jobId } = req.params;
 
-    const job = await Job.findById(jobId);
+    const job = await Job.findById(jobId).populate("employer");
     if (!job) return res.status(404).json({ message: "Job not found." });
     if (job.status === "closed") return res.status(400).json({ message: "This job is closed." });
 
-    // Check if already applied
     const existing = await Application.findOne({ job: jobId, candidate: req.userId });
     if (existing) return res.status(400).json({ message: "You have already applied for this job." });
 
-    // Simple compatibility score based on disability accommodations match
     const candidate = await User.findById(req.userId);
-    let score = Math.floor(Math.random() * 30) + 60; // placeholder 60-90 until AI engine is ready
+    if (!candidate) return res.status(404).json({ message: "Candidate not found." });
+
+    const score = Math.floor(Math.random() * 30) + 60;
 
     const application = await Application.create({
       job: jobId,
@@ -160,7 +161,38 @@ export const applyForJob = async (req, res) => {
       compatibilityScore: score,
     });
 
-    res.status(201).json({ message: "Application submitted successfully!", application });
+    // 📩 EMAIL TO EMPLOYER
+    if (job.employer?.email) {
+      await sendEmail({
+        to: job.employer.email,
+        subject: `New application for ${job.title}`,
+        html: `
+          <h2>New Application</h2>
+          <p>${candidate.name} applied for <b>${job.title}</b></p>
+          <p>Email: ${candidate.email}</p>
+        `,
+      });
+    }
+
+    // 📩 EMAIL TO CANDIDATE
+    if (candidate.email) {
+      const companyName = job.employer?.companyName || job.employer?.name || "Company";
+
+      await sendEmail({
+        to: candidate.email,
+        subject: `Application Received`,
+        html: `
+          <h2>Application Received</h2>
+          <p>You applied for <b>${job.title}</b> at <b>${companyName}</b></p>
+        `,
+      });
+    }
+
+    res.status(201).json({
+      message: "Application submitted and emails sent!",
+      application,
+    });
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -174,6 +206,22 @@ export const getMyApplications = async (req, res) => {
       .sort({ createdAt: -1 });
 
     res.status(200).json({ applications });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getJobById = async (req, res) => {
+  try {
+    const { jobId } = req.params;
+
+    const job = await Job.findById(jobId).populate("employer", "name companyName industry");
+
+    if (!job) {
+      return res.status(404).json({ message: "Job not found." });
+    }
+
+    res.status(200).json({ job });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

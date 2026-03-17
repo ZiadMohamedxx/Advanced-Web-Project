@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+
 
 type UserData = {
   id: string;
@@ -29,6 +31,7 @@ export default function Profile() {
   const [loadingImage, setLoadingImage] = useState(false);
   const [loadingSave, setLoadingSave] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -67,6 +70,51 @@ export default function Profile() {
         });
       });
   }, [toast]);
+
+const handleDeleteProfile = async () => {
+  if (!user) return;
+
+  const confirmDelete = window.confirm(
+    "Are you sure you want to delete your profile? This action cannot be undone."
+  );
+
+  if (!confirmDelete) return;
+
+  try {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_BASE_URL}/auth/profile/${user.id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Delete failed");
+    }
+
+    // 🔥 logout after delete
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    toast({
+      title: "Profile deleted",
+      description: "Your account has been removed",
+    });
+
+    navigate("/"); // redirect to home
+  } catch (error: any) {
+    toast({
+      title: "Error",
+      description: error.message,
+      variant: "destructive",
+    });
+  }
+};
+
 
   const handleUpload = async () => {
     if (!user || !selectedFile) {
@@ -334,6 +382,16 @@ export default function Profile() {
           <Button onClick={handleSave} disabled={loadingSave}>
             {loadingSave ? "Saving..." : "Save Changes"}
           </Button>
+
+          <div className="pt-6 border-t">
+  <Button
+    variant="destructive"
+    onClick={handleDeleteProfile}
+    className="w-full"
+  >
+    Delete Profile
+  </Button>
+</div>
         </CardContent>
       </Card>
     </div>

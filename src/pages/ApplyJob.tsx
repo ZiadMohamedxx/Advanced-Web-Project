@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -7,44 +7,157 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  User, Mail, Phone, FileText, CheckCircle2, Briefcase,
-  Building2, MapPin, ArrowLeft
+  User,
+  Mail,
+  Phone,
+  FileText,
+  CheckCircle2,
+  Briefcase,
+  Building2,
+  MapPin,
+  ArrowLeft,
+  Loader2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { API_BASE_URL } from "@/lib/api";
 
-const jobs = [
-  { id: 1, title: "Frontend Developer", company: "TechInclusive Co.", location: "Remote", type: "Full-time" },
-  { id: 2, title: "Data Analyst", company: "AccessFirst Inc.", location: "New York, NY", type: "Full-time" },
-  { id: 3, title: "Content Writer", company: "Words4All", location: "Remote", type: "Part-time" },
-  { id: 4, title: "Customer Support Specialist", company: "HelpDesk Pro", location: "Chicago, IL", type: "Full-time" },
-  { id: 5, title: "UX Researcher", company: "DesignForAll Studio", location: "Remote", type: "Contract" },
-];
+type Job = {
+  _id: string;
+  title: string;
+  location: string;
+  workType: string;
+  employer?: {
+    name?: string;
+    companyName?: string;
+  };
+};
+
+type CandidateInfo = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  cvPath?: string;
+};
 
 export default function ApplyJob() {
   const { jobId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+
   const [submitted, setSubmitted] = useState(false);
   const [cvFile, setCvFile] = useState<File | null>(null);
+  const [job, setJob] = useState<Job | null>(null);
+  const [candidateInfo, setCandidateInfo] = useState<CandidateInfo | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const job = jobs.find((j) => j.id === Number(jobId));
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const storedUser = localStorage.getItem("user");
 
-  // Simulated candidate data (would come from auth/profile in real app)
-  const [candidateInfo] = useState({
-    name: "John Doe",
-    email: "john@example.com",
-    phone: "+1 (555) 000-0000",
-    cvName: "John_Doe_CV.pdf",
-  });
+    if (!token || !storedUser) {
+      navigate("/signin");
+      return;
+    }
 
-  const handleSubmit = (e: React.FormEvent) => {
+    const parsedUser = JSON.parse(storedUser);
+
+    const fetchData = async () => {
+      try {
+        const [jobResponse, profileResponse] = await Promise.all([
+          fetch(`${API_BASE_URL}/jobs/${jobId}`, {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+          fetch(`${API_BASE_URL}/auth/profile/${parsedUser.id}`, {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+        ]);
+
+        const jobData = await jobResponse.json();
+        const profileData = await profileResponse.json();
+
+        if (!jobResponse.ok) {
+          throw new Error(jobData.message || "Failed to load job");
+        }
+
+        if (!profileResponse.ok) {
+          throw new Error(profileData.message || "Failed to load profile");
+        }
+
+        setJob(jobData.job);
+        setCandidateInfo({
+          id: profileData._id || profileData.id,
+          name: profileData.name || "",
+          email: profileData.email || "",
+          phone: profileData.phone || "",
+          cvPath: profileData.cvPath || "",
+        });
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "Could not load application data",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [jobId, navigate, toast]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
-    toast({
-      title: "Application submitted!",
-      description: `You've applied for ${job?.title} at ${job?.company}.`,
-    });
+
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        navigate("/signin");
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/jobs/${jobId}/apply`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to apply");
+      }
+
+      setSubmitted(true);
+
+      toast({
+        title: "Application submitted!",
+        description: data.message,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Application failed",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (!job) {
     return (
@@ -52,12 +165,35 @@ export default function ApplyJob() {
         <Card className="shadow-card max-w-md w-full">
           <CardContent className="p-8 text-center space-y-4">
             <p className="text-muted-foreground">Job not found.</p>
-            <Link to="/jobs"><Button variant="outline">Back to Jobs</Button></Link>
+            <Link to="/jobs">
+              <Button variant="outline">Back to Jobs</Button>
+            </Link>
           </CardContent>
         </Card>
       </div>
     );
   }
+
+  if (!candidateInfo) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Card className="shadow-card max-w-md w-full">
+          <CardContent className="p-8 text-center space-y-4">
+            <p className="text-muted-foreground">Candidate profile not found.</p>
+            <Link to="/profile">
+              <Button variant="outline">Go to Profile</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const companyName = job.employer?.companyName || job.employer?.name || "Company";
+  const cvFileName =
+    cvFile?.name ||
+    (candidateInfo.cvPath ? candidateInfo.cvPath.split("/").pop()?.split("\\").pop() : "") ||
+    "No CV uploaded";
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center py-12">
@@ -82,7 +218,6 @@ export default function ApplyJob() {
                   <CardTitle className="text-2xl font-bold">Apply for Position</CardTitle>
                   <CardDescription>Confirm your details to submit your application</CardDescription>
 
-                  {/* Job info */}
                   <div className="flex items-center gap-3 mt-4 p-3 rounded-lg bg-secondary/50">
                     <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                       <Briefcase className="h-5 w-5 text-primary" />
@@ -90,11 +225,19 @@ export default function ApplyJob() {
                     <div>
                       <p className="font-semibold text-sm">{job.title}</p>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{job.company}</span>
-                        <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{job.location}</span>
+                        <span className="flex items-center gap-1">
+                          <Building2 className="h-3 w-3" />
+                          {companyName}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {job.location}
+                        </span>
                       </div>
                     </div>
-                    <Badge variant="secondary" className="ml-auto text-xs">{job.type}</Badge>
+                    <Badge variant="secondary" className="ml-auto text-xs">
+                      {job.workType}
+                    </Badge>
                   </div>
                 </CardHeader>
 
@@ -104,7 +247,12 @@ export default function ApplyJob() {
                       <Label htmlFor="name">Full Name</Label>
                       <div className="relative">
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input id="name" defaultValue={candidateInfo.name} className="pl-10" required />
+                        <Input
+                          id="name"
+                          value={candidateInfo.name}
+                          className="pl-10"
+                          readOnly
+                        />
                       </div>
                     </div>
 
@@ -112,7 +260,13 @@ export default function ApplyJob() {
                       <Label htmlFor="applyEmail">Email</Label>
                       <div className="relative">
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input id="applyEmail" type="email" defaultValue={candidateInfo.email} className="pl-10" required />
+                        <Input
+                          id="applyEmail"
+                          type="email"
+                          value={candidateInfo.email}
+                          className="pl-10"
+                          readOnly
+                        />
                       </div>
                     </div>
 
@@ -120,29 +274,44 @@ export default function ApplyJob() {
                       <Label htmlFor="applyPhone">Phone Number</Label>
                       <div className="relative">
                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input id="applyPhone" type="tel" defaultValue={candidateInfo.phone} className="pl-10" required />
+                        <Input
+                          id="applyPhone"
+                          type="tel"
+                          value={candidateInfo.phone}
+                          className="pl-10"
+                          readOnly
+                        />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Your CV</Label>
-                      <div className="p-3 rounded-lg border border-border bg-secondary/30 flex items-center gap-3">
-                        <FileText className="h-5 w-5 text-primary shrink-0" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">{cvFile ? cvFile.name : candidateInfo.cvName}</p>
-                          <p className="text-xs text-muted-foreground">Uploaded during registration</p>
-                        </div>
-                        <label className="cursor-pointer">
-                          <span className="text-xs text-primary hover:underline">Change</span>
-                          <input
-                            type="file"
-                            accept=".pdf,.doc,.docx"
-                            className="hidden"
-                            onChange={(e) => setCvFile(e.target.files?.[0] || null)}
-                          />
-                        </label>
-                      </div>
-                    </div>
+  <Label>Your CV</Label>
+
+  <div className="p-3 rounded-lg border border-border bg-secondary/30 flex items-center gap-3">
+    <FileText className="h-5 w-5 text-primary shrink-0" />
+
+    <div className="flex-1">
+      <p className="text-sm font-medium">{cvFileName}</p>
+      <p className="text-xs text-muted-foreground">
+        {candidateInfo.cvPath
+          ? "This CV will be used for this application"
+          : "No CV uploaded in profile"}
+      </p>
+    </div>
+
+    {candidateInfo.cvPath && (
+     <a
+  href={`${API_BASE_URL}/${candidateInfo.cvPath.replace(/\\/g, "/")}`}
+  target="_blank"
+  rel="noreferrer"
+>
+  <Button type="button" variant="outline" size="sm">
+    View
+  </Button>
+</a>
+    )}
+  </div>
+</div>
 
                     <Button type="submit" size="lg" className="w-full gap-2">
                       <CheckCircle2 className="h-4 w-4" /> Confirm & Apply
@@ -165,7 +334,7 @@ export default function ApplyJob() {
                   </div>
                   <h2 className="text-2xl font-bold">Application Submitted!</h2>
                   <p className="text-muted-foreground">
-                    Your application for <strong>{job.title}</strong> at <strong>{job.company}</strong> has been submitted successfully. We'll notify you once the employer reviews your profile.
+                    Your application for <strong>{job.title}</strong> at <strong>{companyName}</strong> has been submitted successfully.
                   </p>
                   <div className="flex gap-3 justify-center pt-2">
                     <Link to="/jobs">

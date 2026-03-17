@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, Accessibility, Sun, Moon, User, Building2 } from "lucide-react";
+import { Menu, X, Accessibility, Sun, Moon, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { API_BASE_URL } from "@/lib/api";
 
@@ -74,12 +74,9 @@ export default function Navbar() {
     guestLinks;
 
   const portalLink =
-    user?.role === "candidate"
-      ? { label: "My Profile",                                   to: "/candidate-portal", icon: User      }
-    : user?.role === "corporate"
-      ? { label: user.companyName || user.name || "My Company",  to: "/employer-portal",  icon: Building2 }
+  user?.role === "corporate"
+    ? { label: user.companyName || user.name || "My Company", to: "/employer-portal", icon: Building2 }
     : null;
-
   return (
     <nav
       className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md"

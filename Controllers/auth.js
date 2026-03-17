@@ -3,6 +3,45 @@ import jwt from "jsonwebtoken";
 import User from "../Models/user.js";
 import multer from "multer";
 import fs from "fs";
+import sendEmail from "../utils/sendEmail.js";
+
+
+import Application from "../Models/application.js";
+import Job from "../Models/job.js";
+
+export const deleteProfile = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findById(id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    // 🔥 If candidate → delete applications
+    if (user.role === "candidate") {
+      await Application.deleteMany({ candidate: id });
+    }
+
+    // 🔥 If corporate → delete jobs + applications
+    if (user.role === "corporate") {
+      const jobs = await Job.find({ employer: id });
+
+      const jobIds = jobs.map((job) => job._id);
+
+      await Application.deleteMany({ job: { $in: jobIds } });
+      await Job.deleteMany({ employer: id });
+    }
+
+    await User.findByIdAndDelete(id);
+
+    res.status(200).json({ message: "Profile deleted successfully." });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 
 // CV upload folder
 const cvUploadDir = "uploads/cvs";
@@ -330,5 +369,7 @@ const uploadProfilePicture = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+
 
 export { signup, login, getProfile, updateProfile, uploadProfilePicture };
