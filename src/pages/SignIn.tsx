@@ -25,13 +25,8 @@ export default function SignIn() {
 
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
@@ -54,7 +49,16 @@ export default function SignIn() {
         description: "Welcome back to InclusiveHire.",
       });
 
-      navigate("/");
+      // ✅ Navigate based on role
+      const role = data.user?.role;
+      if (role === "candidate") {
+        navigate("/jobs");
+      } else if (role === "corporate") {
+        navigate("/employer-portal");
+      } else {
+        navigate("/");
+      }
+
     } catch (error) {
       toast({
         title: "Server error",
