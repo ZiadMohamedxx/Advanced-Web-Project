@@ -1,69 +1,71 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Accessibility } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
-const guestLinks = [
+const guestLinksConfig = [
   {
-    title: "Platform",
+    titleKey: "footer.platform",
     links: [
-      { label: "Find Jobs",        to: "/jobs" },
-      { label: "Candidate Portal", to: "/candidate-portal" },
-      { label: "Employer Portal",  to: "/employer-portal" },
+      { labelKey: "footer.findJobs",        to: "/jobs" },
+      { labelKey: "footer.candidatePortal", to: "/candidate-portal" },
+      { labelKey: "footer.employerPortal",  to: "/employer-portal" },
     ],
   },
   {
-    title: "Resources",
+    titleKey: "footer.resources",
     links: [
-      { label: "Accessibility", to: "/accessibility" },
-      { label: "About Us",      to: "/about" },
-      { label: "AI Features",   to: "/about" },
+      { labelKey: "footer.accessibilityLink", to: "/accessibility" },
+      { labelKey: "footer.aboutUs",      to: "/about" },
+      { labelKey: "footer.aiFeatures",   to: "/about" },
     ],
   },
   {
-    title: "Support",
+    titleKey: "footer.support",
     links: [
-      { label: "Help Center",    to: "/" },
-      { label: "Contact Us",     to: "/" },
-      { label: "Privacy Policy", to: "/" },
+      { labelKey: "footer.helpCenter",    to: "/" },
+      { labelKey: "footer.contactUs",     to: "/" },
+      { labelKey: "footer.privacyPolicy", to: "/" },
     ],
   },
 ];
 
-const candidateFooterLinks = [
+const candidateFooterLinksConfig = [
   {
-    title: "My Space",
+    titleKey: "footer.mySpace",
     links: [
-      { label: "Home",       to: "/jobs" },
-      { label: "My Profile", to: "/candidate-portal" },
+      { labelKey: "footer.findJobs",       to: "/jobs" },
+      { labelKey: "footer.myProfile", to: "/candidate-portal" },
     ],
   },
   {
-    title: "Resources",
+    titleKey: "footer.resources",
     links: [
-      { label: "About", to: "/about" },
+      { labelKey: "footer.aboutUs", to: "/about" },
     ],
   },
 ];
 
-const corporateFooterLinks = [
+const corporateFooterLinksConfig = [
   {
-    title: "My Space",
+    titleKey: "footer.mySpace",
     links: [
-      { label: "Home",         to: "/employer-portal" },
-      { label: "Post a Job",   to: "/post-job" },
-      { label: "My Dashboard", to: "/employer-dashboard" },
+      { labelKey: "footer.employerPortal",         to: "/employer-portal" },
+      { labelKey: "footer.postAJob",   to: "/post-job" },
+      { labelKey: "footer.myDashboard", to: "/employer-dashboard" },
     ],
   },
   {
-    title: "Resources",
+    titleKey: "footer.resources",
     links: [
-      { label: "About", to: "/about" },
+      { labelKey: "footer.aboutUs", to: "/about" },
     ],
   },
 ];
 
 export default function Footer() {
   const [role, setRole] = useState<"candidate" | "corporate" | null>(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     const stored = localStorage.getItem("user");
@@ -73,10 +75,18 @@ export default function Footer() {
     }
   }, []);
 
-  const footerLinks =
-    role === "candidate" ? candidateFooterLinks :
-    role === "corporate" ? corporateFooterLinks :
-    guestLinks;
+  const footerLinksConfig =
+    role === "candidate" ? candidateFooterLinksConfig :
+    role === "corporate" ? corporateFooterLinksConfig :
+    guestLinksConfig;
+
+  const footerLinks = footerLinksConfig.map(section => ({
+    title: t(section.titleKey),
+    links: section.links.map(link => ({
+      label: t(link.labelKey),
+      to: link.to
+    }))
+  }));
 
   return (
     <footer className="border-t bg-secondary/50" role="contentinfo">
@@ -88,7 +98,7 @@ export default function Footer() {
               <span className="text-gradient">InclusiveHire</span>
             </Link>
             <p className="text-sm text-muted-foreground">
-              Empowering people with disabilities to find meaningful careers through AI-driven matching and accessibility-first design.
+              {t("footer.tagline")}
             </p>
           </div>
           {footerLinks.map((section) => (
@@ -110,7 +120,7 @@ export default function Footer() {
           ))}
         </div>
         <div className="mt-10 pt-6 border-t text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} InclusiveHire. Built with accessibility at its core.
+          {t("footer.copyright")}
         </div>
       </div>
     </footer>

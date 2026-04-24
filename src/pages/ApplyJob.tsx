@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { API_BASE_URL } from "@/lib/api";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type Job = {
   _id: string;
@@ -44,6 +45,7 @@ export default function ApplyJob() {
   const { jobId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const [submitted, setSubmitted] = useState(false);
   const [cvFile, setCvFile] = useState<File | null>(null);
@@ -100,8 +102,8 @@ export default function ApplyJob() {
         });
       } catch (error: any) {
         toast({
-          title: "Error",
-          description: error.message || "Could not load application data",
+          title: t("applyJob.errorTitle"),
+          description: error.message || t("applyJob.errorDesc"),
           variant: "destructive",
         });
       } finally {
@@ -139,13 +141,13 @@ export default function ApplyJob() {
       setSubmitted(true);
 
       toast({
-        title: "Application submitted!",
+        title: t("applyJob.applicationSubmittedTitle"),
         description: data.message,
       });
     } catch (error: any) {
       toast({
-        title: "Application failed",
-        description: error.message || "Something went wrong",
+        title: t("applyJob.applicationFailedTitle"),
+        description: error.message || t("applyJob.applicationFailedDesc"),
         variant: "destructive",
       });
     }
@@ -164,9 +166,9 @@ export default function ApplyJob() {
       <div className="min-h-[60vh] flex items-center justify-center">
         <Card className="shadow-card max-w-md w-full">
           <CardContent className="p-8 text-center space-y-4">
-            <p className="text-muted-foreground">Job not found.</p>
+            <p className="text-muted-foreground">{t("applyJob.jobNotFound")}</p>
             <Link to="/jobs">
-              <Button variant="outline">Back to Jobs</Button>
+              <Button variant="outline">{t("applyJob.backToJobs")}</Button>
             </Link>
           </CardContent>
         </Card>
@@ -179,9 +181,9 @@ export default function ApplyJob() {
       <div className="min-h-[60vh] flex items-center justify-center">
         <Card className="shadow-card max-w-md w-full">
           <CardContent className="p-8 text-center space-y-4">
-            <p className="text-muted-foreground">Candidate profile not found.</p>
+            <p className="text-muted-foreground">{t("applyJob.profileNotFound")}</p>
             <Link to="/profile">
-              <Button variant="outline">Go to Profile</Button>
+              <Button variant="outline">{t("applyJob.goToProfile")}</Button>
             </Link>
           </CardContent>
         </Card>
@@ -213,10 +215,10 @@ export default function ApplyJob() {
                     to="/jobs"
                     className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-2 w-fit"
                   >
-                    <ArrowLeft className="h-4 w-4" /> Back to Jobs
+                    <ArrowLeft className="h-4 w-4" /> {t("applyJob.backToJobs")}
                   </Link>
-                  <CardTitle className="text-2xl font-bold">Apply for Position</CardTitle>
-                  <CardDescription>Confirm your details to submit your application</CardDescription>
+                  <CardTitle className="text-2xl font-bold">{t("applyJob.applyForPosition")}</CardTitle>
+                  <CardDescription>{t("applyJob.confirmDetails")}</CardDescription>
 
                   <div className="flex items-center gap-3 mt-4 p-3 rounded-lg bg-secondary/50">
                     <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
@@ -244,7 +246,7 @@ export default function ApplyJob() {
                 <CardContent>
                   <form onSubmit={handleSubmit} className="space-y-5">
                     <div className="space-y-2">
-                      <Label htmlFor="name">Full Name</Label>
+                      <Label htmlFor="name">{t("applyJob.fullName")}</Label>
                       <div className="relative">
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
@@ -257,7 +259,7 @@ export default function ApplyJob() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="applyEmail">Email</Label>
+                      <Label htmlFor="applyEmail">{t("applyJob.email")}</Label>
                       <div className="relative">
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
@@ -271,7 +273,7 @@ export default function ApplyJob() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="applyPhone">Phone Number</Label>
+                      <Label htmlFor="applyPhone">{t("applyJob.phoneNumber")}</Label>
                       <div className="relative">
                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
@@ -285,7 +287,7 @@ export default function ApplyJob() {
                     </div>
 
                     <div className="space-y-2">
-  <Label>Your CV</Label>
+  <Label>{t("applyJob.yourCV")}</Label>
 
   <div className="p-3 rounded-lg border border-border bg-secondary/30 flex items-center gap-3">
     <FileText className="h-5 w-5 text-primary shrink-0" />
@@ -294,27 +296,27 @@ export default function ApplyJob() {
       <p className="text-sm font-medium">{cvFileName}</p>
       <p className="text-xs text-muted-foreground">
         {candidateInfo.cvPath
-          ? "This CV will be used for this application"
-          : "No CV uploaded in profile"}
+          ? t("applyJob.cvWillBeUsed")
+          : t("applyJob.noCVUploaded")}
       </p>
     </div>
 
     {candidateInfo.cvPath && (
-     <a
-  href={`${API_BASE_URL}/${candidateInfo.cvPath.replace(/\\/g, "/")}`}
-  target="_blank"
-  rel="noreferrer"
->
-  <Button type="button" variant="outline" size="sm">
-    View
-  </Button>
-</a>
+      <a
+        href={`${API_BASE_URL}/${candidateInfo.cvPath.replace(/\\/g, "/")}`}
+        target="_blank"
+        rel="noreferrer"
+      >
+        <Button type="button" variant="outline" size="sm">
+          {t("applyJob.view")}
+        </Button>
+      </a>
     )}
   </div>
 </div>
 
                     <Button type="submit" size="lg" className="w-full gap-2">
-                      <CheckCircle2 className="h-4 w-4" /> Confirm & Apply
+                      <CheckCircle2 className="h-4 w-4" /> {t("applyJob.confirmAndApply")}
                     </Button>
                   </form>
                 </CardContent>
@@ -332,16 +334,18 @@ export default function ApplyJob() {
                   <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
                     <CheckCircle2 className="h-8 w-8 text-primary" />
                   </div>
-                  <h2 className="text-2xl font-bold">Application Submitted!</h2>
+                  <h2 className="text-2xl font-bold">{t("applyJob.applicationSubmitted")}</h2>
                   <p className="text-muted-foreground">
-                    Your application for <strong>{job.title}</strong> at <strong>{companyName}</strong> has been submitted successfully.
+                    {t("applyJob.applicationSubmittedDesc")
+                      .replace("{title}", job.title)
+                      .replace("{company}", companyName)}
                   </p>
                   <div className="flex gap-3 justify-center pt-2">
                     <Link to="/jobs">
-                      <Button variant="outline">Browse More Jobs</Button>
+                      <Button variant="outline">{t("applyJob.browseMoreJobs")}</Button>
                     </Link>
                     <Link to="/candidate-portal">
-                      <Button>My Portal</Button>
+                      <Button>{t("applyJob.myPortal")}</Button>
                     </Link>
                   </div>
                 </CardContent>

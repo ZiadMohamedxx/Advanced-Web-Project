@@ -7,12 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { LogIn, Mail, Lock } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { API_BASE_URL } from "@/lib/api";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const { t } = useLanguage();
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -33,7 +35,7 @@ export default function SignIn() {
 
       if (!response.ok) {
         toast({
-          title: "Login failed",
+          title: t("common.error"),
           description: data.message || "Something went wrong",
           variant: "destructive",
         });
@@ -45,7 +47,7 @@ export default function SignIn() {
       localStorage.setItem("user", JSON.stringify(data.user));
 
       toast({
-        title: "Signed in successfully!",
+        title: t("common.success"),
         description: "Welcome back to InclusiveHire.",
       });
 
@@ -61,7 +63,7 @@ export default function SignIn() {
 
     } catch (error) {
       toast({
-        title: "Server error",
+        title: t("common.error"),
         description: "Could not connect to backend server",
         variant: "destructive",
       });
@@ -83,13 +85,13 @@ export default function SignIn() {
               <div className="mx-auto h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
                 <LogIn className="h-6 w-6 text-primary" />
               </div>
-              <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
-              <CardDescription>Sign in to your InclusiveHire account</CardDescription>
+              <CardTitle className="text-2xl font-bold">{t("signIn.title")}</CardTitle>
+              <CardDescription>{t("signIn.email")}</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">{t("signIn.email")}</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -106,6 +108,10 @@ export default function SignIn() {
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
+                    <Label htmlFor="password">{t("signIn.password")}</Label>
+                    <button type="button" className="text-xs text-primary hover:underline">
+                      {t("signIn.forgotPassword")}
+                    </button>
                     <Label htmlFor="password">Password</Label>
                     <button
   type="button"
@@ -131,13 +137,13 @@ export default function SignIn() {
 
                 <Button type="submit" size="lg" className="w-full gap-2" disabled={loading}>
                   <LogIn className="h-4 w-4" />
-                  {loading ? "Signing In..." : "Sign In"}
+                  {loading ? t("common.loading") : t("signIn.signIn")}
                 </Button>
 
                 <p className="text-center text-sm text-muted-foreground">
-                  Don't have an account?{" "}
+                  {t("signIn.noAccount")}{" "}
                   <Link to="/signup" className="text-primary font-medium hover:underline">
-                    Get Started
+                    {t("signIn.signUp")}
                   </Link>
                 </p>
               </form>

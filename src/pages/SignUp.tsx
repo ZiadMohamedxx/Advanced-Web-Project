@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { API_BASE_URL } from "@/lib/api";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type UserType = "candidate" | "corporate" | null;
 
@@ -43,23 +44,15 @@ async function extractTextFromFile(file: File): Promise<string> {
 }
 
 function parseCV(text: string) {
-  const lines = text
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter(Boolean);
+  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
 
-  // ── Email ──
   let email = "";
   const emailRegex = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/;
   for (const line of lines) {
     const m = line.match(emailRegex);
-    if (m) {
-      email = m[0].trim();
-      break;
-    }
+    if (m) { email = m[0].trim(); break; }
   }
 
-  // ── Phone ──
   let phone = "";
   const phoneRegex = /(\+?[\d\s\-().]{7,20})/;
   for (const line of lines) {
@@ -67,14 +60,10 @@ function parseCV(text: string) {
     const m = line.match(phoneRegex);
     if (m) {
       const digits = m[1].replace(/\D/g, "");
-      if (digits.length >= 7) {
-        phone = m[1].trim();
-        break;
-      }
+      if (digits.length >= 7) { phone = m[1].trim(); break; }
     }
   }
 
-  // ── Name ──
   let firstName = "";
   let lastName = "";
   const nameRegex = /^([A-Za-z]+)\s+([A-Za-z]+)(\s+[A-Za-z]+)?$/;
@@ -91,33 +80,20 @@ function parseCV(text: string) {
   return { firstName, lastName, phone, email };
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-
 export default function SignUp() {
+  const { t } = useLanguage();
   const [userType, setUserType] = useState<UserType>(null);
   const [step, setStep] = useState<1 | 2>(1);
   const [loading, setLoading] = useState(false);
 
   const [candidateData, setCandidateData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    password: "",
-    phone: "",
-    disabilityType: "",
-    preferredAccommodations: "",
-    cv: null as File | null,
+    firstName: "", lastName: "", email: "", password: "",
+    phone: "", disabilityType: "", preferredAccommodations: "", cv: null as File | null,
   });
 
   const [corporateData, setCorporateData] = useState({
-    companyName: "",
-    contactFirst: "",
-    contactLast: "",
-    email: "",
-    password: "",
-    phone: "",
-    industry: "",
-    companySize: "",
+    companyName: "", contactFirst: "", contactLast: "",
+    email: "", password: "", phone: "", industry: "", companySize: "",
   });
 
   const navigate = useNavigate();
@@ -125,10 +101,8 @@ export default function SignUp() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     try {
       setLoading(true);
-
       const formData = new FormData();
 
       if (userType === "candidate") {
@@ -139,10 +113,7 @@ export default function SignUp() {
         formData.append("phone", candidateData.phone);
         formData.append("disabilityType", candidateData.disabilityType);
         formData.append("preferredAccommodations", candidateData.preferredAccommodations);
-
-        if (candidateData.cv) {
-          formData.append("cv", candidateData.cv);
-        }
+        if (candidateData.cv) formData.append("cv", candidateData.cv);
       }
 
       if (userType === "corporate") {
@@ -166,11 +137,7 @@ export default function SignUp() {
       const data = await response.json();
 
       if (!response.ok) {
-        toast({
-          title: "Signup failed",
-          description: data.message || "Something went wrong",
-          variant: "destructive",
-        });
+        toast({ title: t("signUp.signupFailed"), description: data.message || t("signUp.somethingWrong"), variant: "destructive" });
         setLoading(false);
         return;
       }
@@ -179,17 +146,13 @@ export default function SignUp() {
       localStorage.setItem("user", JSON.stringify(data.user));
 
       toast({
-        title: "Account created!",
-        description: `Your ${userType} account has been registered successfully.`,
+        title: t("signUp.accountCreated"),
+        description: t("signUp.accountCreatedDesc").replace("{type}", userType ?? ""),
       });
 
       navigate(userType === "candidate" ? "/candidate-portal" : "/employer-portal");
     } catch {
-      toast({
-        title: "Server error",
-        description: "Could not connect to backend server",
-        variant: "destructive",
-      });
+      toast({ title: t("signUp.serverError"), description: t("signUp.serverErrorDesc"), variant: "destructive" });
     }
 
     setLoading(false);
@@ -209,8 +172,8 @@ export default function SignUp() {
             >
               <Card className="shadow-card">
                 <CardHeader className="text-center">
-                  <CardTitle className="text-2xl font-bold">Join InclusiveHire</CardTitle>
-                  <CardDescription>How would you like to use the platform?</CardDescription>
+                  <CardTitle className="text-2xl font-bold">{t("signUp.joinTitle")}</CardTitle>
+                  <CardDescription>{t("signUp.joinDesc")}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <button
@@ -224,8 +187,8 @@ export default function SignUp() {
                       <User className="h-6 w-6 text-primary" />
                     </div>
                     <div className="text-left">
-                      <p className="font-semibold text-foreground">I'm a Candidate</p>
-                      <p className="text-sm text-muted-foreground">Looking for inclusive job opportunities</p>
+                      <p className="font-semibold text-foreground">{t("signUp.iAmCandidate")}</p>
+                      <p className="text-sm text-muted-foreground">{t("signUp.candidateDesc")}</p>
                     </div>
                     <ArrowRight className="h-5 w-5 text-muted-foreground ml-auto" />
                   </button>
@@ -241,8 +204,8 @@ export default function SignUp() {
                       <Building2 className="h-6 w-6 text-accent" />
                     </div>
                     <div className="text-left">
-                      <p className="font-semibold text-foreground">I'm a Corporate / Employer</p>
-                      <p className="text-sm text-muted-foreground">Hiring talent and building inclusive teams</p>
+                      <p className="font-semibold text-foreground">{t("signUp.iAmCorporate")}</p>
+                      <p className="text-sm text-muted-foreground">{t("signUp.corporateDesc")}</p>
                     </div>
                     <ArrowRight className="h-5 w-5 text-muted-foreground ml-auto" />
                   </button>
@@ -263,15 +226,13 @@ export default function SignUp() {
                     onClick={() => setStep(1)}
                     className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-2 w-fit"
                   >
-                    <ArrowLeft className="h-4 w-4" /> Back
+                    <ArrowLeft className="h-4 w-4" /> {t("signUp.back")}
                   </button>
                   <CardTitle className="text-2xl font-bold">
-                    {userType === "candidate" ? "Candidate Sign Up" : "Corporate Sign Up"}
+                    {userType === "candidate" ? t("signUp.candidateSignUp") : t("signUp.corporateSignUp")}
                   </CardTitle>
                   <CardDescription>
-                    {userType === "candidate"
-                      ? "Upload your CV to auto-fill your details"
-                      : "Register your company and connect with talented candidates"}
+                    {userType === "candidate" ? t("signUp.candidateSubDesc") : t("signUp.corporateSubDesc")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -285,15 +246,16 @@ export default function SignUp() {
                     <div className="flex items-start gap-2">
                       <Checkbox id="terms" required />
                       <Label htmlFor="terms" className="text-sm leading-snug text-muted-foreground">
-                        I agree to the{" "}
-                        <span className="text-primary underline cursor-pointer">Terms of Service</span> and{" "}
-                        <span className="text-primary underline cursor-pointer">Privacy Policy</span>
+                        {t("signUp.agreeTerms")}{" "}
+                        <span className="text-primary underline cursor-pointer">{t("signUp.termsOfService")}</span>{" "}
+                        {t("signUp.and")}{" "}
+                        <span className="text-primary underline cursor-pointer">{t("signUp.privacyPolicy")}</span>
                       </Label>
                     </div>
 
                     <Button type="submit" size="lg" className="w-full gap-2" disabled={loading}>
                       <CheckCircle2 className="h-4 w-4" />
-                      {loading ? "Creating Account..." : "Create Account"}
+                      {loading ? t("signUp.creatingAccount") : t("signUp.createAccount")}
                     </Button>
                   </form>
                 </CardContent>
@@ -309,70 +271,49 @@ export default function SignUp() {
 // ─── Candidate Form ───────────────────────────────────────────────────────────
 
 function CandidateForm({
-  data,
-  setData,
+  data, setData,
 }: {
   data: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    password: string;
-    phone: string;
-    disabilityType: string;
-    preferredAccommodations: string;
-    cv: File | null;
+    firstName: string; lastName: string; email: string; password: string;
+    phone: string; disabilityType: string; preferredAccommodations: string; cv: File | null;
   };
-  setData: React.Dispatch<
-    React.SetStateAction<{
-      firstName: string;
-      lastName: string;
-      email: string;
-      password: string;
-      phone: string;
-      disabilityType: string;
-      preferredAccommodations: string;
-      cv: File | null;
-    }>
-  >;
+  setData: React.Dispatch<React.SetStateAction<{
+    firstName: string; lastName: string; email: string; password: string;
+    phone: string; disabilityType: string; preferredAccommodations: string; cv: File | null;
+  }>>;
 }) {
+  const { t } = useLanguage();
   const [ocrLoading, setOcrLoading] = useState(false);
   const { toast } = useToast();
 
   const handleCVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Store the file in state for FormData submission
     setData((prev) => ({ ...prev, cv: file }));
 
-    // Only run OCR on image/PDF files that ocr.space can handle
     const ocrSupported = ["image/png", "image/jpeg", "image/jpg", "application/pdf"];
     if (!ocrSupported.includes(file.type)) return;
 
     setOcrLoading(true);
-    toast({ title: "Reading your CV…", description: "Extracting your details, please wait." });
+    toast({ title: t("signUp.readingCV"), description: t("signUp.extractingDetails") });
 
     try {
       const rawText = await extractTextFromFile(file);
       const { firstName, lastName, phone, email } = parseCV(rawText);
 
       setData((prev) => ({
-        ...prev,
-        cv: file,
+        ...prev, cv: file,
         ...(firstName && { firstName }),
         ...(lastName  && { lastName }),
         ...(phone     && { phone }),
         ...(email     && { email }),
       }));
 
-      toast({
-        title: "CV scanned ✓",
-        description: "Fields filled in — please review and add your password.",
-      });
+      toast({ title: t("signUp.cvScanned"), description: t("signUp.cvScannedDesc") });
     } catch (err) {
       toast({
-        title: "OCR failed",
-        description: (err as Error).message ?? "Could not read the CV. Fill in manually.",
+        title: t("signUp.ocrFailed"),
+        description: (err as Error).message ?? t("signUp.fillManually"),
         variant: "destructive",
       });
     } finally {
@@ -382,122 +323,78 @@ function CandidateForm({
 
   return (
     <>
-      {/* ── CV Upload ── */}
       <div className="space-y-2">
-        <Label htmlFor="cv">Upload CV</Label>
+        <Label htmlFor="cv">{t("signUp.uploadCV")}</Label>
         <div className="relative">
           <Input
-            id="cv"
-            type="file"
-            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
-            className="cursor-pointer"
-            onChange={handleCVUpload}
-            disabled={ocrLoading}
+            id="cv" type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+            className="cursor-pointer" onChange={handleCVUpload} disabled={ocrLoading}
           />
           {ocrLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-background/70 rounded-md">
               <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              <span className="ml-2 text-sm text-primary font-medium">Scanning CV…</span>
+              <span className="ml-2 text-sm text-primary font-medium">{t("signUp.scanningCV")}</span>
             </div>
           )}
         </div>
-        <p className="text-xs text-muted-foreground">
-          Accepted: PDF, DOC, DOCX, PNG, JPG (max 10 MB) · Fields will be auto-filled from your CV
-        </p>
+        <p className="text-xs text-muted-foreground">{t("signUp.cvHint")}</p>
       </div>
 
-      {/* ── Name ── */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="firstName">First Name</Label>
-          <Input
-            id="firstName"
-            placeholder="John"
-            required
-            value={data.firstName}
-            onChange={(e) => setData({ ...data, firstName: e.target.value })}
-          />
+          <Label htmlFor="firstName">{t("signUp.firstName")}</Label>
+          <Input id="firstName" placeholder="John" required value={data.firstName}
+            onChange={(e) => setData({ ...data, firstName: e.target.value })} />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="lastName">Last Name</Label>
-          <Input
-            id="lastName"
-            placeholder="Doe"
-            required
-            value={data.lastName}
-            onChange={(e) => setData({ ...data, lastName: e.target.value })}
-          />
+          <Label htmlFor="lastName">{t("signUp.lastName")}</Label>
+          <Input id="lastName" placeholder="Doe" required value={data.lastName}
+            onChange={(e) => setData({ ...data, lastName: e.target.value })} />
         </div>
       </div>
 
-      {/* ── Email ── */}
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          type="email"
-          placeholder="john@example.com"
-          required
-          value={data.email}
-          onChange={(e) => setData({ ...data, email: e.target.value })}
-        />
+        <Label htmlFor="email">{t("signUp.email")}</Label>
+        <Input id="email" type="email" placeholder="john@example.com" required value={data.email}
+          onChange={(e) => setData({ ...data, email: e.target.value })} />
       </div>
 
-      {/* ── Password (never auto-filled for security) ── */}
       <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
-        <Input
-          id="password"
-          type="password"
-          placeholder="••••••••"
-          required
-          value={data.password}
-          onChange={(e) => setData({ ...data, password: e.target.value })}
-        />
+        <Label htmlFor="password">{t("signUp.password")}</Label>
+        <Input id="password" type="password" placeholder="••••••••" required value={data.password}
+          onChange={(e) => setData({ ...data, password: e.target.value })} />
       </div>
 
-      {/* ── Phone ── */}
       <div className="space-y-2">
-        <Label htmlFor="phone">Phone Number</Label>
-        <Input
-          id="phone"
-          type="tel"
-          placeholder="+1 (555) 000-0000"
-          value={data.phone}
-          onChange={(e) => setData({ ...data, phone: e.target.value })}
-        />
+        <Label htmlFor="phone">{t("signUp.phone")}</Label>
+        <Input id="phone" type="tel" placeholder="+1 (555) 000-0000" value={data.phone}
+          onChange={(e) => setData({ ...data, phone: e.target.value })} />
       </div>
 
-      {/* ── Disability ── */}
       <div className="space-y-2">
-        <Label htmlFor="disability">Disability Type</Label>
-        <Select
-          value={data.disabilityType}
-          onValueChange={(value) => setData({ ...data, disabilityType: value })}
-        >
+        <Label htmlFor="disability">{t("signUp.disabilityType")}</Label>
+        <Select value={data.disabilityType} onValueChange={(value) => setData({ ...data, disabilityType: value })}>
           <SelectTrigger id="disability">
-            <SelectValue placeholder="Select disability type" />
+            <SelectValue placeholder={t("signUp.selectDisability")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="visual">Visual Impairment</SelectItem>
-            <SelectItem value="hearing">Hearing Impairment</SelectItem>
-            <SelectItem value="mobility">Mobility / Physical</SelectItem>
-            <SelectItem value="cognitive">Cognitive / Learning</SelectItem>
-            <SelectItem value="speech">Speech Impairment</SelectItem>
-            <SelectItem value="chronic">Chronic Illness</SelectItem>
-            <SelectItem value="multiple">Multiple Disabilities</SelectItem>
-            <SelectItem value="prefer-not">Prefer not to say</SelectItem>
+            <SelectItem value="visual">{t("signUp.visual")}</SelectItem>
+            <SelectItem value="hearing">{t("signUp.hearing")}</SelectItem>
+            <SelectItem value="mobility">{t("signUp.mobility")}</SelectItem>
+            <SelectItem value="cognitive">{t("signUp.cognitive")}</SelectItem>
+            <SelectItem value="speech">{t("signUp.speech")}</SelectItem>
+            <SelectItem value="chronic">{t("signUp.chronic")}</SelectItem>
+            <SelectItem value="multiple">{t("signUp.multiple")}</SelectItem>
+            <SelectItem value="prefer-not">{t("signUp.preferNot")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {/* ── Accommodations ── */}
       <div className="space-y-2">
-        <Label>Preferred Accommodations</Label>
+        <Label>{t("signUp.preferredAccommodations")}</Label>
         <Textarea
-          placeholder="e.g. Screen reader support, flexible hours, remote work…"
-          className="resize-none"
-          rows={3}
+          placeholder={t("signUp.accommodationsPlaceholder")}
+          className="resize-none" rows={3}
           value={data.preferredAccommodations}
           onChange={(e) => setData({ ...data, preferredAccommodations: e.target.value })}
         />
@@ -509,88 +406,78 @@ function CandidateForm({
 // ─── Corporate Form ───────────────────────────────────────────────────────────
 
 function CorporateForm({
-  data,
-  setData,
+  data, setData,
 }: {
   data: {
-    companyName: string;
-    contactFirst: string;
-    contactLast: string;
-    email: string;
-    password: string;
-    phone: string;
-    industry: string;
-    companySize: string;
+    companyName: string; contactFirst: string; contactLast: string;
+    email: string; password: string; phone: string; industry: string; companySize: string;
   };
-  setData: React.Dispatch<
-    React.SetStateAction<{
-      companyName: string;
-      contactFirst: string;
-      contactLast: string;
-      email: string;
-      password: string;
-      phone: string;
-      industry: string;
-      companySize: string;
-    }>
-  >;
+  setData: React.Dispatch<React.SetStateAction<{
+    companyName: string; contactFirst: string; contactLast: string;
+    email: string; password: string; phone: string; industry: string; companySize: string;
+  }>>;
 }) {
+  const { t } = useLanguage();
+
   return (
     <>
       <div className="space-y-2">
-        <Label htmlFor="companyName">Company Name</Label>
+        <Label htmlFor="companyName">{t("signUp.companyName")}</Label>
         <Input id="companyName" placeholder="Acme Inc." required value={data.companyName}
           onChange={(e) => setData({ ...data, companyName: e.target.value })} />
       </div>
+
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="contactFirst">Contact First Name</Label>
+          <Label htmlFor="contactFirst">{t("signUp.contactFirstName")}</Label>
           <Input id="contactFirst" placeholder="Jane" required value={data.contactFirst}
             onChange={(e) => setData({ ...data, contactFirst: e.target.value })} />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="contactLast">Contact Last Name</Label>
+          <Label htmlFor="contactLast">{t("signUp.contactLastName")}</Label>
           <Input id="contactLast" placeholder="Smith" required value={data.contactLast}
             onChange={(e) => setData({ ...data, contactLast: e.target.value })} />
         </div>
       </div>
+
       <div className="space-y-2">
-        <Label htmlFor="corpEmail">Work Email</Label>
+        <Label htmlFor="corpEmail">{t("signUp.workEmail")}</Label>
         <Input id="corpEmail" type="email" placeholder="jane@acme.com" required value={data.email}
           onChange={(e) => setData({ ...data, email: e.target.value })} />
       </div>
+
       <div className="space-y-2">
-        <Label htmlFor="corpPassword">Password</Label>
+        <Label htmlFor="corpPassword">{t("signUp.password")}</Label>
         <Input id="corpPassword" type="password" placeholder="••••••••" required value={data.password}
           onChange={(e) => setData({ ...data, password: e.target.value })} />
       </div>
+
       <div className="space-y-2">
-        <Label htmlFor="industry">Industry</Label>
-        <Select
-          value={data.industry}
-          onValueChange={(value) => setData({ ...data, industry: value })}
-        >
-          <SelectTrigger id="industry"><SelectValue placeholder="Select industry" /></SelectTrigger>
+        <Label htmlFor="industry">{t("signUp.industry")}</Label>
+        <Select value={data.industry} onValueChange={(value) => setData({ ...data, industry: value })}>
+          <SelectTrigger id="industry">
+            <SelectValue placeholder={t("signUp.selectIndustry")} />
+          </SelectTrigger>
           <SelectContent>
-            <SelectItem value="tech">Technology</SelectItem>
-            <SelectItem value="healthcare">Healthcare</SelectItem>
-            <SelectItem value="finance">Finance</SelectItem>
-            <SelectItem value="education">Education</SelectItem>
-            <SelectItem value="retail">Retail</SelectItem>
-            <SelectItem value="manufacturing">Manufacturing</SelectItem>
-            <SelectItem value="government">Government</SelectItem>
-            <SelectItem value="nonprofit">Non-Profit</SelectItem>
-            <SelectItem value="other">Other</SelectItem>
+            <SelectItem value="tech">{t("signUp.tech")}</SelectItem>
+            <SelectItem value="healthcare">{t("signUp.healthcare")}</SelectItem>
+            <SelectItem value="finance">{t("signUp.finance")}</SelectItem>
+            <SelectItem value="education">{t("signUp.education")}</SelectItem>
+            <SelectItem value="retail">{t("signUp.retail")}</SelectItem>
+            <SelectItem value="manufacturing">{t("signUp.manufacturing")}</SelectItem>
+            <SelectItem value="government">{t("signUp.government")}</SelectItem>
+            <SelectItem value="nonprofit">{t("signUp.nonprofit")}</SelectItem>
+            <SelectItem value="other">{t("signUp.other")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
+
       <div className="space-y-2">
-        <Label htmlFor="companySize">Company Size</Label>
-        <Select
-          value={data.companySize}
-          onValueChange={(value) => setData({ ...data, companySize: value })}
-        >
-          <SelectTrigger id="companySize"><SelectValue placeholder="Select company size" /></SelectTrigger>
+        <Label htmlFor="companySize">{t("signUp.companySize")}</Label>
+        <Select value={data.companySize} onValueChange={(value) => setData({ ...data, companySize: value })}>
+          <SelectTrigger id="companySize">
+            <SelectValue placeholder={t("signUp.selectCompanySize")} />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="1-10">1–10 employees</SelectItem>
             <SelectItem value="11-50">11–50 employees</SelectItem>
@@ -600,8 +487,9 @@ function CorporateForm({
           </SelectContent>
         </Select>
       </div>
+
       <div className="space-y-2">
-        <Label htmlFor="corpPhone">Phone Number</Label>
+        <Label htmlFor="corpPhone">{t("signUp.phone")}</Label>
         <Input id="corpPhone" type="tel" placeholder="+1 (555) 000-0000" value={data.phone}
           onChange={(e) => setData({ ...data, phone: e.target.value })} />
       </div>
