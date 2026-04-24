@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { API_BASE_URL } from "@/lib/api";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Candidate = {
@@ -71,6 +72,7 @@ const fadeUp = {
 export default function EmployerDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const [dashboard, setDashboard] = useState<DashboardEntry[]>([]);
   const [loading, setLoading]     = useState(true);
@@ -139,7 +141,7 @@ export default function EmployerDashboard() {
       );
       toast({ title: `Application ${status}`, description: `Candidate has been ${status}.` });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: t("employerDashboard.errorTitle"), description: err.message, variant: "destructive" });
     } finally {
       setUpdating((prev) => ({ ...prev, [applicationId]: false }));
     }
@@ -165,9 +167,9 @@ export default function EmployerDashboard() {
             : entry
         )
       );
-      toast({ title: "Job closed", description: `"${jobTitle}" is now closed for applications.` });
+      toast({ title: t("employerDashboard.jobClosed"), description: `"${jobTitle}" ${t("employerDashboard.jobClosedDesc")}` });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: t("employerDashboard.errorTitle"), description: err.message, variant: "destructive" });
     } finally {
       setClosing((prev) => ({ ...prev, [jobId]: false }));
     }
@@ -193,18 +195,18 @@ export default function EmployerDashboard() {
           onClick={() => navigate("/employer-portal")}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
         >
-          <ArrowLeft className="h-4 w-4" /> Back to Portal
+          <ArrowLeft className="h-4 w-4" /> {t("employerDashboard.backToPortal")}
         </button>
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight mb-1">Employer Dashboard</h1>
+            <h1 className="text-3xl font-bold tracking-tight mb-1">{t("employerDashboard.title")}</h1>
             <p className="text-muted-foreground">
-              Welcome, <span className="font-medium text-foreground">{user?.companyName || user?.name}</span> — manage your jobs and applicants.
+              {t("employerDashboard.welcome")} <span className="font-medium text-foreground">{user?.companyName || user?.name}</span> — {t("employerDashboard.manageJobsAndApplicants")}
             </p>
           </div>
           <Button className="gap-2 shrink-0" onClick={() => navigate("/post-job")}>
-            <PlusCircle className="h-4 w-4" /> Post a Job
+            <PlusCircle className="h-4 w-4" /> {t("employerDashboard.postAJob")}
           </Button>
         </div>
       </motion.div>
@@ -212,10 +214,10 @@ export default function EmployerDashboard() {
       {/* ── Stats ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
         {[
-          { label: "Jobs Posted",      value: totalJobs,       icon: Briefcase,    color: "text-primary"    },
-          { label: "Total Applicants", value: totalApplicants, icon: Users,        color: "text-blue-500"   },
-          { label: "Accepted",         value: totalAccepted,   icon: CheckCircle2, color: "text-green-500"  },
-          { label: "Pending Review",   value: totalPending,    icon: Clock,        color: "text-yellow-500" },
+          { label: t("employerDashboard.jobsPosted"),      value: totalJobs,       icon: Briefcase,    color: "text-primary"    },
+          { label: t("employerDashboard.totalApplicants"), value: totalApplicants, icon: Users,        color: "text-blue-500"   },
+          { label: t("employerDashboard.accepted"),        value: totalAccepted,   icon: CheckCircle2, color: "text-green-500"  },
+          { label: t("employerDashboard.pendingReview"),   value: totalPending,    icon: Clock,        color: "text-yellow-500" },
         ].map((stat, i) => (
           <motion.div key={stat.label} custom={i} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}>
             <Card className="shadow-card">
@@ -237,10 +239,10 @@ export default function EmployerDashboard() {
       {dashboard.length === 0 && (
         <div className="text-center py-20 text-muted-foreground">
           <Building2 className="h-12 w-12 mx-auto mb-3 opacity-30" />
-          <p className="text-lg font-medium">No jobs posted yet.</p>
-          <p className="text-sm mb-6">Post a job to start receiving applications.</p>
+          <p className="text-lg font-medium">{t("employerDashboard.noJobsYet")}</p>
+          <p className="text-sm mb-6">{t("employerDashboard.noJobsDesc")}</p>
           <Button onClick={() => navigate("/post-job")} className="gap-2">
-            <PlusCircle className="h-4 w-4" /> Post a Job
+            <PlusCircle className="h-4 w-4" /> {t("employerDashboard.postAJob")}
           </Button>
         </div>
       )}
@@ -277,7 +279,7 @@ export default function EmployerDashboard() {
                 {/* Right: applicants count + close button + expand */}
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="text-sm font-medium text-muted-foreground hidden sm:block">
-                    {entry.totalApplicants} applicant{entry.totalApplicants !== 1 ? "s" : ""}
+                    {entry.totalApplicants} {entry.totalApplicants !== 1 ? t("employerDashboard.applicants") : t("employerDashboard.applicant")}
                   </span>
 
                   {/* ✅ Close Job button — only show if open */}
@@ -296,7 +298,7 @@ export default function EmployerDashboard() {
                         ? <Loader2 className="h-3 w-3 animate-spin" />
                         : <Lock className="h-3 w-3" />
                       }
-                      Close Job
+                      {t("employerDashboard.closeJob")}
                     </Button>
                   )}
 
@@ -322,7 +324,7 @@ export default function EmployerDashboard() {
                     <CardContent className="pt-0 pb-4">
                       {entry.applicants.length === 0 ? (
                         <p className="text-sm text-muted-foreground text-center py-6">
-                          No applications yet for this job.
+                          {t("employerDashboard.noApplicationsYet")}
                         </p>
                       ) : (
                         <div className="space-y-3 mt-2">
@@ -349,12 +351,12 @@ export default function EmployerDashboard() {
                                   </div>
                                   {app.candidate.disabilityType && (
                                     <p className="text-xs text-muted-foreground mt-1">
-                                      Disability: {app.candidate.disabilityType}
+                                      {t("employerDashboard.disability")} {app.candidate.disabilityType}
                                     </p>
                                   )}
                                   {app.candidate.preferredAccommodations && (
                                     <p className="text-xs text-muted-foreground">
-                                      Accommodations: {app.candidate.preferredAccommodations}
+                                      {t("employerDashboard.accommodations")} {app.candidate.preferredAccommodations}
                                     </p>
                                   )}
                                   <div className="flex items-center gap-2 mt-1.5">
@@ -366,7 +368,7 @@ export default function EmployerDashboard() {
                                         rel="noreferrer"
                                         className="flex items-center gap-1 text-xs text-primary hover:underline"
                                       >
-                                        <FileText className="h-3 w-3" /> View CV
+                                        <FileText className="h-3 w-3" /> {t("employerDashboard.viewCV")}
                                       </a>
                                     )}
                                   </div>
@@ -382,7 +384,7 @@ export default function EmployerDashboard() {
                                   </span>
                                 </div>
                                 <Progress value={app.compatibilityScore} className="h-1.5 w-32" />
-                                <p className="text-xs text-muted-foreground">Compatibility</p>
+                                <p className="text-xs text-muted-foreground">{t("employerDashboard.compatibility")}</p>
 
                                 {app.status === "submitted" && (
                                   <div className="flex gap-2 mt-1">
@@ -394,7 +396,7 @@ export default function EmployerDashboard() {
                                       onClick={() => handleStatusUpdate(app._id, "accepted")}
                                     >
                                       {updating[app._id] ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
-                                      Accept
+                                      {t("employerDashboard.accept")}
                                     </Button>
                                     <Button
                                       size="sm"
@@ -404,7 +406,7 @@ export default function EmployerDashboard() {
                                       onClick={() => handleStatusUpdate(app._id, "rejected")}
                                     >
                                       {updating[app._id] ? <Loader2 className="h-3 w-3 animate-spin" /> : <XCircle className="h-3 w-3" />}
-                                      Reject
+                                      {t("employerDashboard.reject")}
                                     </Button>
                                   </div>
                                 )}

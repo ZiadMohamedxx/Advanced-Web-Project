@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, Accessibility, Sun, Moon, Building2 } from "lucide-react";
+import { Menu, X, Accessibility, Sun, Moon, Building2, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { API_BASE_URL } from "@/lib/api";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type StoredUser = {
   id: string;
@@ -13,30 +14,31 @@ type StoredUser = {
   profileImage?: string;
 };
 
-const guestLinks = [
-  { label: "Home",          to: "/" },
-  { label: "Find Jobs",     to: "/jobs" },
-  { label: "Candidates",    to: "/candidate-portal" },
-  { label: "Employers",     to: "/employer-portal" },
-  { label: "Accessibility", to: "/accessibility" },
-  { label: "About",         to: "/about" },
+const guestLinksConfig = [
+  { labelKey: "navbar.home",          to: "/" },
+  { labelKey: "navbar.findJobs",     to: "/jobs" },
+  { labelKey: "navbar.candidates",    to: "/candidate-portal" },
+  { labelKey: "navbar.employers",     to: "/employer-portal" },
+  { labelKey: "navbar.accessibility", to: "/accessibility" },
+  { labelKey: "navbar.about",         to: "/about" },
 ];
 
-const candidateLinks = [
-  { label: "Home",       to: "/jobs" },           // ✅ Find Jobs renamed to Home
-  { label: "Candidates", to: "/candidate-portal" },
-  { label: "About",      to: "/about" },
+const candidateLinksConfig = [
+  { labelKey: "navbar.home",       to: "/jobs" },           // ✅ Find Jobs renamed to Home
+  { labelKey: "navbar.candidates", to: "/candidate-portal" },
+  { labelKey: "navbar.about",      to: "/about" },
 ];
 
-const corporateLinks = [
-  { label: "Home",      to: "/employer-portal" }, // ✅ Employers renamed to Home
-  { label: "About",     to: "/about" },
+const corporateLinksConfig = [
+  { labelKey: "navbar.home",      to: "/employer-portal" }, // ✅ Employers renamed to Home
+  { labelKey: "navbar.about",     to: "/about" },
 ];
 
 export default function Navbar() {
   const [open, setOpen]                 = useState(false);
   const [highContrast, setHighContrast] = useState(false);
   const [user, setUser]                 = useState<StoredUser | null>(null);
+  const { t, toggleLanguage, language } = useLanguage();
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -68,20 +70,25 @@ export default function Navbar() {
       ? `${API_BASE_URL}/${user.profileImage.replace(/\\/g, "/")}`
       : "";
 
-  const navLinks =
-    user?.role === "candidate" ? candidateLinks :
-    user?.role === "corporate" ? corporateLinks :
-    guestLinks;
+  const navLinksConfig =
+    user?.role === "candidate" ? candidateLinksConfig :
+    user?.role === "corporate" ? corporateLinksConfig :
+    guestLinksConfig;
+
+  const navLinks = navLinksConfig.map(link => ({
+    label: t(link.labelKey),
+    to: link.to
+  }));
 
   const portalLink =
   user?.role === "corporate"
-    ? { label: user.companyName || user.name || "My Company", to: "/employer-portal", icon: Building2 }
+    ? { label: user.companyName || user.name || t("navbar.myCompany"), to: "/employer-portal", icon: Building2 }
     : null;
   return (
     <nav
       className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md"
       role="navigation"
-      aria-label="Main navigation"
+      aria-label={t("navbar.home")}
     >
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-2 font-bold text-xl" aria-label="InclusiveHire home">
@@ -106,7 +113,23 @@ export default function Navbar() {
 
         {/* Desktop right side */}
         <div className="hidden md:flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={toggleContrast} aria-label="Toggle high contrast mode">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleLanguage}
+            aria-label={t("navbar.language")}
+            title={language === "en" ? "العربية" : "English"}
+          >
+            <Globe className="h-4 w-4" />
+            <span className="text-xs font-semibold ms-1">{language.toUpperCase()}</span>
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleContrast}
+            aria-label="Toggle high contrast mode"
+          >
             {highContrast ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
 
@@ -133,12 +156,12 @@ export default function Navbar() {
                 <span className="text-sm font-medium">{user.name}</span>
               </button>
 
-              <Button variant="outline" size="sm" onClick={handleLogout}>Logout</Button>
+              <Button variant="outline" size="sm" onClick={handleLogout}>{t("navbar.logout")}</Button>
             </>
           ) : (
             <>
-              <Link to="/signin"><Button variant="outline" size="sm">Sign In</Button></Link>
-              <Link to="/signup"><Button size="sm">Get Started</Button></Link>
+              <Link to="/signin"><Button variant="outline" size="sm">{t("navbar.signIn")}</Button></Link>
+              <Link to="/signup"><Button size="sm">{t("navbar.getStarted")}</Button></Link>
             </>
           )}
         </div>
@@ -188,15 +211,20 @@ export default function Navbar() {
                 )}
                 <span>{user.name}</span>
               </button>
-              <Button variant="outline" size="sm" className="w-full" onClick={handleLogout}>Logout</Button>
+              <Button variant="outline" size="sm" className="w-full" onClick={handleLogout}>
+                {t("navbar.logout")}
+              </Button>
             </div>
           ) : (
             <div className="flex gap-2 pt-2">
+              <Button variant="outline" size="sm" className="flex-1" onClick={toggleLanguage}>
+                {language === "en" ? "العربية" : "English"}
+              </Button>
               <Button variant="outline" size="sm" className="flex-1" onClick={toggleContrast}>
                 {highContrast ? "Standard" : "High Contrast"}
               </Button>
               <Link to="/signup" className="flex-1">
-                <Button size="sm" className="w-full">Get Started</Button>
+                <Button size="sm" className="w-full">{t("navbar.getStarted")}</Button>
               </Link>
             </div>
           )}
