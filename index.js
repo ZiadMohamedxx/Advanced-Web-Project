@@ -5,6 +5,7 @@ import connection from "./database.js";
 import productRoutes from "./Routers/product.js";
 import authRoutes from "./Routers/auth.js";
 import jobRoutes from "./Routers/job.js"; 
+import ocrRoutes from "./Routers/ocr.js"; 
 
 dotenv.config();
 
@@ -24,7 +25,8 @@ app.get("/", (req, res) => {
 
 app.use("/products", productRoutes);
 app.use("/auth", authRoutes);
-app.use("/jobs", jobRoutes); // ✅ add this
+app.use("/jobs", jobRoutes); 
+app.use("/ocr", ocrRoutes);
 
 app.listen(port, () => {
   console.log(`Server now listening on port ${port}`);

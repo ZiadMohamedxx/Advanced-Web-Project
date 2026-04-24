@@ -18,22 +18,20 @@ type UserType = "candidate" | "corporate" | null;
 
 // ─── OCR helpers ─────────────────────────────────────────────────────────────
 
-const OCR_API_KEY = "K83147064488957";
-
 async function extractTextFromFile(file: File): Promise<string> {
+  // ✅ FIXED: Call our own backend proxy instead of OCR.space directly
+  //    (direct browser → OCR.space calls are blocked by CORS)
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("apikey", OCR_API_KEY);
-  formData.append("language", "eng");
-  formData.append("isOverlayRequired", "false");
-  formData.append("detectOrientation", "true");
-  formData.append("scale", "true");
-  formData.append("OCREngine", "2");
 
-  const res = await fetch("https://api.ocr.space/parse/image", {
+  const res = await fetch(`${API_BASE_URL}/ocr`, {
     method: "POST",
     body: formData,
   });
+
+  if (!res.ok) {
+    throw new Error(`OCR proxy error: ${res.status}`);
+  }
 
   const json = await res.json();
 
