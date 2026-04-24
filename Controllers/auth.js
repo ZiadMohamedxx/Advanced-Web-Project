@@ -4,6 +4,7 @@ import User from "../Models/user.js";
 import multer from "multer";
 import fs from "fs";
 import sendEmail from "../utils/sendEmail.js";
+import crypto from "crypto";
 
 
 import Application from "../Models/application.js";
@@ -370,6 +371,80 @@ const uploadProfilePicture = async (req, res) => {
   }
 };
 
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // generate token
+    const resetToken = crypto.randomBytes(20).toString("hex");
+
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 min
+
+    await user.save();
+
+    const resetUrl = `http://localhost:8080/reset-password/${resetToken}`;
+
+await sendEmail({
+  to: user.email,
+  subject: "Reset Your Password - InclusiveHire",
+  html: `
+    <div style="font-family: Arial; padding: 20px;">
+      <h2>Reset Your Password</h2>
+      <p>Hello ${user.name},</p>
+      <p>You requested to reset your password.</p>
+
+      <a href="${resetUrl}" 
+         style="display:inline-block;padding:10px 20px;
+         background:#2563eb;color:#fff;text-decoration:none;
+         border-radius:6px;margin-top:10px;">
+         Reset Password
+      </a>
+
+      <p style="margin-top:20px;">If you didn’t request this, ignore this email.</p>
+    </div>
+  `,
+});
+
+    res.status(200).json({ message: "Email sent" });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
+
+    user.password = await bcrypt.hash(password, 10);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+
+    await user.save();
+
+    res.status(200).json({ message: "Password updated" });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 
 export { signup, login, getProfile, updateProfile, uploadProfilePicture };

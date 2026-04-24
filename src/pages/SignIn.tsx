@@ -112,6 +112,14 @@ export default function SignIn() {
                     <button type="button" className="text-xs text-primary hover:underline">
                       {t("signIn.forgotPassword")}
                     </button>
+                    <Label htmlFor="password">Password</Label>
+                    <button
+  type="button"
+  onClick={() => navigate("/forgot-password")}
+  className="text-xs text-primary hover:underline"
+>
+  Forgot password?
+</button>
                   </div>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

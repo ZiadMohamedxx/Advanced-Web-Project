@@ -1,25 +1,27 @@
 import nodemailer from "nodemailer";
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
-
-const sendEmail = async ({ to, subject, html }) => {
+const sendEmail = async ({ to, subject, text, html }) => {
   try {
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
     await transporter.sendMail({
       from: `"InclusiveHire" <${process.env.EMAIL_USER}>`,
       to,
       subject,
-      html,
+      text: text || "",   // fallback
+      html: html || "",   // ✅ IMPORTANT
     });
 
-    console.log("✅ Email sent to:", to);
+    console.log("Email sent successfully");
+
   } catch (error) {
-    console.log("❌ Email error:", error.message);
+    console.log("Email error:", error.message);
   }
 };
 

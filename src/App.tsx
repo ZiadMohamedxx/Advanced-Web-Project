@@ -18,6 +18,9 @@ import PostJob from "./pages/PostJob";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 import EmployerDashboard from "./pages/Employerdashboard";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+
 
 const queryClient = new QueryClient();
 
@@ -49,6 +52,33 @@ const App = () => (
       </TooltipProvider>
     </QueryClientProvider>
   </LanguageProvider>
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <Routes>
+        <Route element={<Layout />}>
+  <Route path="/" element={<Index />} />
+  <Route path="/candidate-portal" element={<CandidatePortal />} />
+  <Route path="/employer-portal" element={<EmployerPortal />} />
+  <Route path="/jobs" element={<Jobs />} />
+  <Route path="/accessibility" element={<AccessibilityPage />} />
+  <Route path="/about" element={<About />} />
+  <Route path="/signup" element={<SignUp />} />
+  <Route path="/signin" element={<SignIn />} />
+  <Route path="/profile" element={<Profile />} />
+  <Route path="/employer-dashboard" element={<EmployerDashboard />} />
+  <Route path="/apply/:jobId" element={<ApplyJob />} />
+  <Route path="/post-job" element={<PostJob />} />
+  <Route path="/forgot-password" element={<ForgotPassword />} />
+  <Route path="/reset-password/:token" element={<ResetPassword />} />
+          </Route>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
 );
 
 export default App;
