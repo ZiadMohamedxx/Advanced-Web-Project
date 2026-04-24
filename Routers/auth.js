@@ -1,4 +1,5 @@
 import express from "express";
+import { forgotPassword, resetPassword } from "../Controllers/auth.js";
 import {
   signup,
   login,
@@ -18,5 +19,7 @@ router.get("/profile/:id", getProfile);
 router.put("/profile/:id", updateProfile);
 router.put("/profile-image/:id", uploadProfileImage.single("profileImage"), uploadProfilePicture);
 router.delete("/profile/:id", authMiddleware, deleteProfile);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password/:token", resetPassword);
 
 export default router;
