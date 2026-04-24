@@ -17,6 +17,9 @@ import PostJob from "./pages/PostJob";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 import EmployerDashboard from "./pages/Employerdashboard";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+
 
 const queryClient = new QueryClient();
 
@@ -40,6 +43,8 @@ const App = () => (
   <Route path="/employer-dashboard" element={<EmployerDashboard />} />
   <Route path="/apply/:jobId" element={<ApplyJob />} />
   <Route path="/post-job" element={<PostJob />} />
+  <Route path="/forgot-password" element={<ForgotPassword />} />
+  <Route path="/reset-password/:token" element={<ResetPassword />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
