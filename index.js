@@ -6,8 +6,12 @@ import productRoutes from "./Routers/product.js";
 import authRoutes from "./Routers/auth.js";
 import jobRoutes from "./Routers/job.js"; 
 import ocrRoutes from "./Routers/ocr.js"; 
+import accessibilityRouter from "./Routers/accessibility.js";
 
 dotenv.config();
+
+
+console.log("OPENAI KEY LOADED:", !!process.env.OPENAI_API_KEY);
 
 const app = express();
 const port = 4000;
@@ -27,6 +31,7 @@ app.use("/products", productRoutes);
 app.use("/auth", authRoutes);
 app.use("/jobs", jobRoutes); 
 app.use("/ocr", ocrRoutes);
+app.use("/accessibility", accessibilityRouter);
 
 app.listen(port, () => {
   console.log(`Server now listening on port ${port}`);
