@@ -30,9 +30,11 @@ export default function AccessibilityPanel() {
 
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const [announcement, setAnnouncement] = useState("");
+  const [showCommandHelp, setShowCommandHelp] = useState(false);
+  const [commands, setCommands] = useState<Record<string, any>>({});
 
   useEffect(() => {
-    if (!isOpen) return;
+  if (!isOpen) return;
 
     closeButtonRef.current?.focus();
 
@@ -46,6 +48,31 @@ export default function AccessibilityPanel() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, setIsOpen]);
 
+  // Listen for voice command to open accessibility panel
+  useEffect(() => {
+    const handleOpenAccessibility = () => {
+      setIsOpen(true);
+    };
+
+    document.body.addEventListener("open-accessibility", handleOpenAccessibility);
+    return () =>
+      document.body.removeEventListener("open-accessibility", handleOpenAccessibility);
+  }, [setIsOpen]);
+
+  // Listen for help command to show voice commands
+  useEffect(() => {
+    const handleShowCommandHelp = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      setCommands(customEvent.detail?.commands || {});
+      setShowCommandHelp(true);
+      setIsOpen(true);
+    };
+
+    document.body.addEventListener("show-command-help", handleShowCommandHelp);
+    return () =>
+      document.body.removeEventListener("show-command-help", handleShowCommandHelp);
+  }, [setIsOpen]);
+
   const announce = (message: string) => {
     setAnnouncement(message);
     window.setTimeout(() => setAnnouncement(""), 1000);
@@ -55,7 +82,8 @@ export default function AccessibilityPanel() {
     type: "none" | "visual" | "hearing" | "motor" | "cognitive"
   ) => {
     applyPreset(type);
-    announce(
+    announce
+    (
       type === "none"
         ? "Default accessibility profile applied"
         : `${type} accessibility profile applied`
@@ -331,6 +359,56 @@ export default function AccessibilityPanel() {
               >
                 <SpeechToTextControls />
               </FeatureCard>
+
+              {/* Voice Commands Help */}
+              {showCommandHelp && Object.keys(commands).length > 0 && (
+                <div className="overflow-hidden rounded-[24px] border border-primary/15 bg-gradient-to-br from-primary/[0.06] via-background to-accent/[0.04]">
+                  <div className="border-b border-primary/10 px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="text-primary">
+                        <Mic className="h-4 w-4" />
+                      </div>
+                      <h3 className="text-sm font-semibold text-foreground">
+                        Voice Commands
+                      </h3>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Available voice commands you can say
+                    </p>
+                  </div>
+
+                  <div className="max-h-[300px] overflow-y-auto p-4 space-y-3">
+                    {Object.entries(commands).map(([category, categoryCommands]) => (
+                      <div key={category}>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                          {category}
+                        </p>
+                        <div className="space-y-1.5 pl-2">
+                          {Object.entries(categoryCommands).map(([key, config]: any) => (
+                            <div key={key} className="text-xs">
+                              <p className="font-medium text-foreground">
+                                {config.aliases.join(" • ")}
+                              </p>
+                              <p className="text-muted-foreground">
+                                {config.description}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="border-t border-primary/10 px-4 py-2">
+                    <button
+                      onClick={() => setShowCommandHelp(false)}
+                      className="w-full text-xs font-medium text-muted-foreground hover:text-foreground transition"
+                    >
+                      Close Help
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Reset */}
               <div className="border-t border-primary/10 pt-1">

@@ -63,6 +63,7 @@
     "node-fetch": "^3.3.2",
     "nodemailer": "^8.0.2",
     "nodemon": "^3.1.14",
+    "openai": "^6.34.0",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
@@ -103,5 +104,13 @@
   "main": "index.js",
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ZiadMohamedxx/Advanced-Web-Project.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ZiadMohamedxx/Advanced-Web-Project/issues"
+  },
+  "homepage": "https://github.com/ZiadMohamedxx/Advanced-Web-Project#readme"
 }
