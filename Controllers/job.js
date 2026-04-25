@@ -126,6 +126,23 @@ export const closeJob = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+export const reopenJob = async (req, res) => {
+  try {
+    const { jobId } = req.params;
+
+    const job = await Job.findById(jobId);
+
+    if (!job) return res.status(404).json({ message: "Job not found." });
+    if (job.employer.toString() !== req.userId) return res.status(403).json({ message: "Unauthorized." });
+
+    job.status = "open";
+    await job.save();
+
+    res.status(200).json({ message: "Job reopened successfully.", job });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 export const getAllJobs = async (req, res) => {
   try {
     const jobs = await Job.find({ status: "open" })

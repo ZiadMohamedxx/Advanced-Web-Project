@@ -9,6 +9,7 @@ import {
   applyForJob,
   getMyApplications,
   closeJob,
+  reopenJob,
 } from "../Controllers/job.js";
 import authMiddleware from "../Middleware/auth.js";
 
@@ -23,5 +24,6 @@ router.get("/", authMiddleware, getAllJobs);
 router.get("/:jobId", authMiddleware, getJobById);
 router.post("/:jobId/apply", authMiddleware, applyForJob);
 router.patch("/:jobId/close", authMiddleware, closeJob);
+router.patch("/:jobId/reopen", authMiddleware, reopenJob);
 
 export default router;
