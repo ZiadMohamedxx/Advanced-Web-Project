@@ -124,3 +124,101 @@
     box-shadow: var(--card-hover-shadow);
   }
 }
+
+/* Accessibility Features */
+:root {
+  --app-font-scale: 1;
+}
+
+/* High Contrast Mode */
+body.a11y-high-contrast {
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 0%;
+  --card-foreground: 0 0% 100%;
+  --primary: 60 100% 50%;
+  --primary-foreground: 0 0% 0%;
+  --border: 0 0% 100%;
+  --input: 0 0% 100%;
+  --secondary: 0 0% 100%;
+  --secondary-foreground: 0 0% 0%;
+}
+
+body.a11y-high-contrast * {
+  border-color: hsl(var(--border)) !important;
+  background-blend-mode: lighten;
+}
+
+/* Large Text - Add additional scale on top of font scale slider */
+body.a11y-large-text * {
+  font-size: calc(1em * 1.2) !important;
+  line-height: 1.6 !important;
+}
+
+/* Simple Mode - reduce decorative elements */
+body.a11y-simple-mode .bg-hero-gradient,
+body.a11y-simple-mode .text-gradient {
+  opacity: 0.7;
+}
+
+body.a11y-simple-mode [aria-hidden="true"] {
+  display: none !important;
+}
+
+body.a11y-simple-mode svg:not([aria-label]),
+body.a11y-simple-mode [class*="icon"] svg {
+  opacity: 0.6;
+}
+
+/* Large Targets - increase touch targets */
+body.a11y-large-targets button,
+body.a11y-large-targets a,
+body.a11y-large-targets input[type="checkbox"],
+body.a11y-large-targets input[type="radio"] {
+  min-height: 48px;
+  min-width: 48px;
+  padding: 0.75rem 1.5rem !important;
+}
+
+body.a11y-large-targets svg {
+  min-width: 24px;
+  min-height: 24px;
+}
+
+/* Focus Highlight */
+body.a11y-focus-highlight *:focus-visible {
+  outline: 3px solid hsl(var(--ring)) !important;
+  outline-offset: 2px !important;
+}
+
+body.a11y-focus-highlight button:focus-visible,
+body.a11y-focus-highlight a:focus-visible,
+body.a11y-focus-highlight input:focus-visible,
+body.a11y-focus-highlight select:focus-visible,
+body.a11y-focus-highlight textarea:focus-visible {
+  box-shadow: 0 0 0 3px hsl(var(--ring) / 0.5) !important;
+}
+
+/* Reduce Motion */
+body.a11y-reduced-motion,
+body.a11y-reduced-motion * {
+  animation: none !important;
+  animation-duration: 0s !important;
+  animation-iteration-count: 1 !important;
+  transition: none !important;
+  transition-duration: 0s !important;
+  scroll-behavior: auto !important;
+}
+
+/* Font Scale - applies to all text */
+body {
+  font-size: calc(1rem * var(--app-font-scale));
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body.a11y-reduced-motion html {
+  scroll-behavior: auto;
+}
