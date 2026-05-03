@@ -8,7 +8,10 @@ import {
   Keyboard,
   Command,
 } from "lucide-react";
-import { handleVoiceCommand } from "../lib/voiceCommands";
+import { interpretWithAI } from "@/voice/aiInterpreter";
+import { executeIntent } from "@/voice/executionEngine";
+import { matchWithFallback } from "@/voice/fallbackMatcher";
+import { contextManager } from "@/voice/contextManager";
 
 const API_BASE_URL = "http://localhost:4000";
 
@@ -18,7 +21,8 @@ export default function SpeechToTextControls() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  const isProcessingRef = useRef(false); // Guard against duplicate requests
+  const isProcessingRef = useRef(false);
+  const lastCommandTimeRef = useRef<number>(0);
 
   const [mode, setMode] = useState<VoiceMode>("dictation");
   const [isRecording, setIsRecording] = useState(false);
@@ -87,7 +91,6 @@ export default function SpeechToTextControls() {
       mediaRecorder.onstop = async () => {
         setIsRecording(false);
 
-        // Guard against duplicate requests
         if (isProcessingRef.current) {
           return;
         }
@@ -109,7 +112,6 @@ export default function SpeechToTextControls() {
 
           await uploadAudio(audioBlob);
         } finally {
-          // Always reset the flag and cleanup
           isProcessingRef.current = false;
           cleanupStream();
         }
@@ -177,18 +179,69 @@ export default function SpeechToTextControls() {
       setTranscript(text);
 
       if (mode === "command") {
-        // Execute the voice command and get feedback
-        const feedback = handleVoiceCommand(text);
-        setStatus(feedback || "Command not recognized");
+        await processVoiceCommand(text);
       } else {
-        // Dictation mode - just show completion
-        setStatus("Dictation complete");
+        setStatus("✅ Dictation complete");
       }
     } catch (error: any) {
-      setStatus("Error");
+      setStatus("❌ Error");
       setErrorMessage(error?.message || "Failed to transcribe audio.");
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const processVoiceCommand = async (text: string) => {
+    try {
+      // Debounce check
+      const now = Date.now();
+      if (now - lastCommandTimeRef.current < 1000) {
+        setStatus("⏱️ Please wait before the next command");
+        return;
+      }
+      lastCommandTimeRef.current = now;
+
+      setStatus("🤖 Processing with AI...");
+
+      // Try AI interpretation first
+      let interpretedCommand = await interpretWithAI(text);
+
+      // If AI fails or low confidence, use fallback
+      if (!interpretedCommand || interpretedCommand.confidence < 50) {
+        console.log("⚠️ AI failed, using fallback matcher");
+        setStatus("⚠️ AI failed, using fallback...");
+        interpretedCommand = await matchWithFallback(text);
+      }
+
+      if (!interpretedCommand) {
+        setStatus("❓ Command not recognized");
+        setErrorMessage("Could not understand the command. Try again.");
+        return;
+      }
+
+      // Execute the interpreted command
+      const executionResult = await executeIntent(interpretedCommand);
+
+      // Update context
+      contextManager.updateContext(
+        text,
+        interpretedCommand.action,
+        interpretedCommand.params,
+        executionResult.success
+      );
+
+      if (executionResult.success) {
+        setStatus(
+          `✅ ${executionResult.message} (${interpretedCommand.confidence}%)`
+        );
+      } else {
+        setStatus(`⚠️ ${executionResult.message}`);
+        setErrorMessage(executionResult.message);
+      }
+    } catch (error: any) {
+      console.error("Command processing error:", error);
+      setStatus("❌ Failed to process command");
+      setErrorMessage(String(error));
     }
   };
 
@@ -269,8 +322,7 @@ export default function SpeechToTextControls() {
         <div className="mt-2 flex items-center gap-2 text-sm text-foreground">
           {isUploading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
-          ) : status === "Dictation complete" ||
-            status === "Command transcript ready" ? (
+          ) : status.includes("✅") || status.includes("✓") ? (
             <CheckCircle2 className="h-4 w-4 text-primary" />
           ) : null}
           <span>{status}</span>
@@ -301,7 +353,7 @@ export default function SpeechToTextControls() {
         <p className="mt-2 text-sm leading-6 text-foreground">
           {mode === "dictation"
             ? "Voice will be converted into normal text for writing, search, or form filling."
-            : "Voice will be converted into a command phrase that we will execute in the next step."}
+            : "Voice will be interpreted as a command using AI-powered natural language understanding and executed immediately."}
         </p>
       </div>
 
