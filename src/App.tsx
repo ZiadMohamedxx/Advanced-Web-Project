@@ -1,3 +1,6 @@
+import { useEffect } from "react"
+import { useNavigate, useSearchParams } from "react-router-dom"
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -26,6 +29,31 @@ import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
+
+function AuthSuccess() {
+  const [params] = useSearchParams()
+  const navigate = useNavigate()
+
+ useEffect(() => {
+  const token = params.get("token");
+  const user = params.get("user");
+
+  if (token && user) {
+
+    localStorage.setItem("token", token);
+
+    localStorage.setItem(
+      "user",
+      decodeURIComponent(user)
+    );
+
+    navigate("/jobs");
+  }
+}, [params, navigate]);
+
+  return <p>Signing you in...</p>
+}
+
 const App = () => (
   <AccessibilityProvider> 
     <LanguageProvider>
@@ -52,7 +80,7 @@ const App = () => (
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password/:token" element={<ResetPassword />} />
               </Route>
-
+                <Route path="/auth/success" element={<AuthSuccess />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
