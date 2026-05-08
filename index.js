@@ -5,15 +5,29 @@ import connection from "./database.js";
 import productRoutes from "./Routers/product.js";
 import authRoutes from "./Routers/auth.js";
 import jobRoutes from "./Routers/job.js"; 
+import session from "express-session";
+import passport from "./passport.js";
 
 dotenv.config();
 
 const app = express();
 const port = 4000;
-
+app.use(
+  session({
+    secret: "secret",
+    resave: false,
+    saveUninitialized: true,
+  })
+);
+app.use(passport.initialize());
+app.use(passport.session());
 connection();
 
-app.use(cors());
+app.use(cors({
+  origin: "http://localhost:8080",
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"],
+}));
 app.use(express.json());
 
 app.use("/uploads", express.static("uploads"));

@@ -1,3 +1,6 @@
+import { useEffect } from "react"
+import { useNavigate, useSearchParams } from "react-router-dom"
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,7 +21,33 @@ import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 import EmployerDashboard from "./pages/Employerdashboard";
 
+
 const queryClient = new QueryClient();
+
+
+function AuthSuccess() {
+  const [params] = useSearchParams()
+  const navigate = useNavigate()
+
+ useEffect(() => {
+  const token = params.get("token");
+  const user = params.get("user");
+
+  if (token && user) {
+
+    localStorage.setItem("token", token);
+
+    localStorage.setItem(
+      "user",
+      decodeURIComponent(user)
+    );
+
+    navigate("/jobs");
+  }
+}, [params, navigate]);
+
+  return <p>Signing you in...</p>
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -34,12 +63,14 @@ const App = () => (
   <Route path="/jobs" element={<Jobs />} />
   <Route path="/accessibility" element={<AccessibilityPage />} />
   <Route path="/about" element={<About />} />
+  <Route path="/auth/success" element={<AuthSuccess />} />
   <Route path="/signup" element={<SignUp />} />
   <Route path="/signin" element={<SignIn />} />
   <Route path="/profile" element={<Profile />} />
   <Route path="/employer-dashboard" element={<EmployerDashboard />} />
   <Route path="/apply/:jobId" element={<ApplyJob />} />
   <Route path="/post-job" element={<PostJob />} />
+ 
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

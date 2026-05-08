@@ -4,11 +4,65 @@ import User from "../Models/user.js";
 import multer from "multer";
 import fs from "fs";
 import sendEmail from "../utils/sendEmail.js";
-
+import { OAuth2Client } from "google-auth-library";
 
 import Application from "../Models/application.js";
 import Job from "../Models/job.js";
 
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+const googleLogin = async (req, res) => {
+  try {
+    const { idToken } = req.body;
+
+    if (!idToken) {
+      return res.status(400).json({ message: "No token provided" });
+    }
+
+    // Verify token with Google
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+
+    const { sub, email, name, picture } = payload;
+
+    // Check if user exists
+    let user = await User.findOne({ email });
+
+    // If not exist → create user
+    if (!user) {
+      user = await User.create({
+        role: "candidate", // default role (you can change later)
+        name,
+        email,
+        password: null, // important: no password for Google users
+        googleId: sub,
+        profileImage: picture,
+      });
+    }
+
+    // Generate JWT (same style as your login)
+    const token = jwt.sign(
+      { id: user._id, email: user.email, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.status(200).json({
+      message: "Google login successful",
+      user: buildUserResponse(user),
+      token,
+    });
+
+  } catch (error) {
+    console.log(error);
+    res.status(401).json({ message: "Google authentication failed" });
+  }
+};
 export const deleteProfile = async (req, res) => {
   try {
     const { id } = req.params;
@@ -372,4 +426,11 @@ const uploadProfilePicture = async (req, res) => {
 
 
 
-export { signup, login, getProfile, updateProfile, uploadProfilePicture };
+export {
+  signup,
+  login,
+  googleLogin,
+  getProfile,
+  updateProfile,
+  uploadProfilePicture
+};
