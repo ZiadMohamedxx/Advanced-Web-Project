@@ -123,6 +123,30 @@
   .shadow-card-hover {
     box-shadow: var(--card-hover-shadow);
   }
+
+  /* Voice Assistant Animations */
+  .delay-100 {
+    animation-delay: 100ms;
+  }
+
+  .delay-200 {
+    animation-delay: 200ms;
+  }
+
+  @keyframes bounce-dots {
+    0%, 80%, 100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    40% {
+      transform: translateY(-8px);
+      opacity: 0.7;
+    }
+  }
+
+  .animate-bounce {
+    animation: bounce-dots 1.4s infinite;
+  }
 }
 
 /* Accessibility Features */

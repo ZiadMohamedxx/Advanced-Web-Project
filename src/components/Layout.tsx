@@ -4,6 +4,8 @@ import Footer from "./Footer";
 import { useLanguage } from "@/contexts/LanguageContext";
 import AccessibilityButton from "@/components/AccessibilityButton";
 import AccessibilityPanel from "@/components/AccessibilityPanel";
+import FloatingVoiceAssistant from "@/components/FloatingVoiceAssistant";
+import CommandCheatSheet from "@/components/CommandCheatSheet";
 
 export default function Layout() {
   const { t } = useLanguage();
@@ -27,6 +29,8 @@ export default function Layout() {
 
       <AccessibilityButton />
       <AccessibilityPanel />
+      <FloatingVoiceAssistant />
+      <CommandCheatSheet />
     </div>
   );
 }

@@ -54,9 +54,16 @@ export default function AccessibilityPanel() {
       setIsOpen(true);
     };
 
+    const handleCloseAccessibility = () => {
+      setIsOpen(false);
+    };
+
     document.body.addEventListener("open-accessibility", handleOpenAccessibility);
-    return () =>
+    document.body.addEventListener("close-accessibility", handleCloseAccessibility);
+    return () => {
       document.body.removeEventListener("open-accessibility", handleOpenAccessibility);
+      document.body.removeEventListener("close-accessibility", handleCloseAccessibility);
+    };
   }, [setIsOpen]);
 
   // Listen for help command to show voice commands
