@@ -3,9 +3,7 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const getClient = () => new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export const transcribeAudio = async (req, res) => {
   let tempFilePath = null;
@@ -15,15 +13,11 @@ export const transcribeAudio = async (req, res) => {
     console.log("OPENAI KEY LOADED:", !!process.env.OPENAI_API_KEY);
 
     if (!process.env.OPENAI_API_KEY) {
-      return res.status(500).json({
-        message: "OPENAI_API_KEY is missing from .env",
-      });
+      return res.status(500).json({ message: "OPENAI_API_KEY is missing from .env" });
     }
 
     if (!req.file) {
-      return res.status(400).json({
-        message: "No audio uploaded",
-      });
+      return res.status(400).json({ message: "No audio uploaded" });
     }
 
     const mimeType = req.file.mimetype || "audio/webm";
@@ -41,26 +35,19 @@ export const transcribeAudio = async (req, res) => {
     tempFilePath = path.join(os.tmpdir(), `audio-${Date.now()}.${extension}`);
     fs.writeFileSync(tempFilePath, req.file.buffer);
 
-    const response = await client.audio.transcriptions.create({
+    const response = await getClient().audio.transcriptions.create({
       file: fs.createReadStream(tempFilePath),
       model: "gpt-4o-mini-transcribe",
     });
 
-    return res.status(200).json({
-      text: response.text || "",
-    });
+    return res.status(200).json({ text: response.text || "" });
   } catch (error) {
     console.error("❌ OpenAI transcription error:", error);
 
     const message =
-      error?.error?.message ||
-      error?.message ||
-      "Failed to transcribe audio";
+      error?.error?.message || error?.message || "Failed to transcribe audio";
 
-    return res.status(500).json({
-      message: "Failed to transcribe audio",
-      error: message,
-    });
+    return res.status(500).json({ message: "Failed to transcribe audio", error: message });
   } finally {
     if (tempFilePath && fs.existsSync(tempFilePath)) {
       try {
@@ -72,24 +59,16 @@ export const transcribeAudio = async (req, res) => {
   }
 };
 
-/**
- * Interpret voice command using OpenAI API
- * Converts natural language into structured intent + action + params
- */
 export const interpretVoiceCommand = async (req, res) => {
   try {
     const { text } = req.body;
 
     if (!text || !text.trim()) {
-      return res.status(400).json({
-        message: "No text provided",
-      });
+      return res.status(400).json({ message: "No text provided" });
     }
 
     if (!process.env.OPENAI_API_KEY) {
-      return res.status(500).json({
-        message: "OpenAI API key not configured",
-      });
+      return res.status(500).json({ message: "OpenAI API key not configured" });
     }
 
     console.log("🤖 Interpreting voice command:", text);
@@ -125,17 +104,11 @@ Supported intents:
 
 Return ONLY valid JSON, no extra text.`;
 
-    const response = await client.chat.completions.create({
+    const response = await getClient().chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        {
-          role: "system",
-          content: systemPrompt,
-        },
-        {
-          role: "user",
-          content: `Interpret this voice command: "${text}"`,
-        },
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Interpret this voice command: "${text}"` },
       ],
       temperature: 0.3,
       max_tokens: 200,
@@ -144,10 +117,8 @@ Return ONLY valid JSON, no extra text.`;
     const content = response.choices[0]?.message?.content || "";
     console.log("🤖 AI Response:", content);
 
-    // Parse JSON response
     let interpretedCommand;
     try {
-      // Extract JSON from response (in case there's extra text)
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       interpretedCommand = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
     } catch (parseError) {
@@ -159,16 +130,12 @@ Return ONLY valid JSON, no extra text.`;
     }
 
     if (!interpretedCommand) {
-      return res.status(400).json({
-        message: "Could not interpret command",
-        rawResponse: content,
-      });
+      return res.status(400).json({ message: "Could not interpret command", rawResponse: content });
     }
 
     return res.status(200).json(interpretedCommand);
   } catch (error) {
     console.error("❌ Voice interpretation error:", error);
-
     return res.status(500).json({
       message: "Failed to interpret voice command",
       error: error?.message || String(error),

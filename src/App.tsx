@@ -53,6 +53,24 @@ function AuthSuccess() {
 
   return <p>Signing you in...</p>
 }
+function RoleRedirect() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const user = localStorage.getItem("user");
+    if (!user) return; // not signed in → stay on Index
+
+    try {
+      const parsed = JSON.parse(user);
+      if (parsed.role === "candidate") navigate("/jobs", { replace: true });
+      else if (parsed.role === "corporate") navigate("/employer-portal", { replace: true });
+    } catch {
+      // invalid data → stay on Index
+    }
+  }, [navigate]);
+
+  return <Index />;
+}
 
 const App = () => (
   <AccessibilityProvider> 
@@ -65,7 +83,7 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route element={<Layout />}>
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={<RoleRedirect />} />
                 <Route path="/candidate-portal" element={<CandidatePortal />} />
                 <Route path="/employer-portal" element={<EmployerPortal />} />
                 <Route path="/jobs" element={<Jobs />} />
