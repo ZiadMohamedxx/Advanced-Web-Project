@@ -21,7 +21,7 @@ const UserSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
+      default: null,
     },
     phone: {
       type: String,
@@ -79,6 +79,6 @@ resetPasswordExpire: {
   }
 );
 
-const User = mongoose.model("User", UserSchema);
+const User = mongoose.model("User", UserSchema) || mongoose.models.User;
 
 export default User;

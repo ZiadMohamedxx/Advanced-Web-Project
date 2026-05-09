@@ -1,3 +1,6 @@
+import { useEffect } from "react"
+import { useNavigate, useSearchParams } from "react-router-dom"
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -23,6 +26,49 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
+
+
+function AuthSuccess() {
+  const [params] = useSearchParams()
+  const navigate = useNavigate()
+
+ useEffect(() => {
+  const token = params.get("token");
+  const user = params.get("user");
+
+  if (token && user) {
+
+    localStorage.setItem("token", token);
+
+    localStorage.setItem(
+      "user",
+      decodeURIComponent(user)
+    );
+
+    navigate("/jobs");
+  }
+}, [params, navigate]);
+
+  return <p>Signing you in...</p>
+}
+function RoleRedirect() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const user = localStorage.getItem("user");
+    if (!user) return; // not signed in → stay on Index
+
+    try {
+      const parsed = JSON.parse(user);
+      if (parsed.role === "candidate") navigate("/jobs", { replace: true });
+      else if (parsed.role === "corporate") navigate("/employer-portal", { replace: true });
+    } catch {
+      // invalid data → stay on Index
+    }
+  }, [navigate]);
+
+  return <Index />;
+}
 
 const App = () => (
   <LanguageProvider>

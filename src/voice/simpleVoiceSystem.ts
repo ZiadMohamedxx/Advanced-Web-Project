@@ -1,0 +1,194 @@
+/**
+ * Voice System - Simplified, Reliable, Accessible
+ * Pure client-side voice recognition with simple JSON-based intent matching
+ */
+
+// Simple command mapping for immediate execution
+export const VOICE_COMMANDS = {
+  // Navigation
+  "jobs": { intent: "NAVIGATE", target: "/jobs" },
+  "job": { intent: "NAVIGATE", target: "/jobs" },
+  "home": { intent: "NAVIGATE", target: "/" },
+  "profile": { intent: "NAVIGATE", target: "/profile" },
+  "account": { intent: "NAVIGATE", target: "/profile" },
+  "about": { intent: "NAVIGATE", target: "/about" },
+  "employer": { intent: "NAVIGATE", target: "/employer-portal" },
+  "candidate": { intent: "NAVIGATE", target: "/candidate-portal" },
+ 
+  // Actions
+  "dark mode": { intent: "ACTION", target: "toggleDark" },
+  "dark": { intent: "ACTION", target: "toggleDark" },
+  "light mode": { intent: "ACTION", target: "toggleLight" },
+  "contrast": { intent: "ACTION", target: "toggleContrast" },
+  "accessibility": { intent: "ACTION", target: "openAccessibility" },
+  "settings": { intent: "ACTION", target: "openAccessibility" },
+  "scroll down": { intent: "ACTION", target: "scrollDown" },
+  "scroll up": { intent: "ACTION", target: "scrollUp" },
+  "back": { intent: "ACTION", target: "goBack" },
+  "refresh": { intent: "ACTION", target: "refresh" },
+  "read page": { intent: "ACTION", target: "readPage" },
+} as const;
+
+// Filler words to ignore
+const FILLER_WORDS = ["the", "a", "an", "and", "or", "to", "in", "on", "at", "for", "with", "please", "can", "you"];
+
+/**
+ * Parse voice input into simple JSON intent
+ * Returns { intent: "NAVIGATE" | "ACTION", target: string }
+ */
+export function parseVoiceInput(text: string): { intent: "NAVIGATE" | "ACTION"; target: string } | null {
+  const normalized = text.toLowerCase().trim();
+
+  // Try exact matches first
+  if (VOICE_COMMANDS[normalized as keyof typeof VOICE_COMMANDS]) {
+    return VOICE_COMMANDS[normalized as keyof typeof VOICE_COMMANDS];
+  }
+
+  // Try substring matches (e.g., "open jobs" → "jobs")
+  for (const [command, intent] of Object.entries(VOICE_COMMANDS)) {
+    if (normalized.includes(command)) {
+      return intent as any;
+    }
+  }
+
+  // Fallback: try to match with filler word removal
+  const words = normalized.split(" ").filter(w => !FILLER_WORDS.includes(w));
+  for (const word of words) {
+    if (VOICE_COMMANDS[word as keyof typeof VOICE_COMMANDS]) {
+      return VOICE_COMMANDS[word as keyof typeof VOICE_COMMANDS];
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Execute parsed voice intent immediately
+ */
+export function executeVoiceIntent(parsed: { intent: "NAVIGATE" | "ACTION"; target: string }): boolean {
+  try {
+    if (parsed.intent === "NAVIGATE") {
+      window.location.href = parsed.target;
+      return true;
+    }
+
+    if (parsed.intent === "ACTION") {
+      return executeAction(parsed.target);
+    }
+
+    return false;
+  } catch (error) {
+    console.error("Execution error:", error);
+    return false;
+  }
+}
+
+/**
+ * Execute simple actions
+ */
+function executeAction(action: string): boolean {
+  try {
+    switch (action) {
+      case "toggleDark":
+        toggleDarkMode();
+        return true;
+      case "toggleLight":
+        toggleLightMode();
+        return true;
+      case "toggleContrast":
+        toggleContrast();
+        return true;
+      case "openAccessibility":
+        openAccessibility();
+        return true;
+      case "scrollDown":
+        window.scrollBy({ top: 300, behavior: "smooth" });
+        return true;
+      case "scrollUp":
+        window.scrollBy({ top: -300, behavior: "smooth" });
+        return true;
+      case "goBack":
+        window.history.back();
+        return true;
+      case "refresh":
+        window.location.reload();
+        return true;
+      case "readPage":
+        readPageAloud();
+        return true;
+      default:
+        return false;
+    }
+  } catch (error) {
+    console.error("Action error:", error);
+    return false;
+  }
+}
+
+function toggleDarkMode() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute("data-theme") === "dark";
+  html.setAttribute("data-theme", isDark ? "light" : "dark");
+  localStorage.setItem("theme-preference", isDark ? "light" : "dark");
+}
+
+function toggleLightMode() {
+  const html = document.documentElement;
+  html.setAttribute("data-theme", "light");
+  localStorage.setItem("theme-preference", "light");
+}
+
+function toggleContrast() {
+  const settings = JSON.parse(localStorage.getItem("accessibility-settings") || "{}");
+  settings.highContrast = !settings.highContrast;
+  localStorage.setItem("accessibility-settings", JSON.stringify(settings));
+  document.body.classList.toggle("a11y-high-contrast", settings.highContrast);
+}
+
+function openAccessibility() {
+  document.body.dispatchEvent(new Event("open-accessibility"));
+}
+
+function readPageAloud() {
+  if (!("speechSynthesis" in window)) return;
+
+  const main = document.querySelector("main") || document.body;
+  const clone = main.cloneNode(true) as HTMLElement;
+  clone.querySelectorAll("script, style, [aria-hidden='true']").forEach(n => n.remove());
+
+  const text = clone.innerText.replace(/\s+/g, " ").trim();
+  if (!text) return;
+
+  const synth = window.speechSynthesis;
+  synth.cancel();
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = 1;
+
+  const voices = synth.getVoices();
+  if (voices.length > 0) {
+    utterance.voice = voices.find(v => v.lang?.includes("en")) || voices[0];
+  }
+
+  synth.speak(utterance);
+}
+
+/**
+ * Get user-friendly feedback message
+ */
+export function getVoiceFeedback(command: string, success: boolean): string {
+  if (!success) return "Command not recognized. Try: jobs, profile, dark mode";
+
+  const normalized = command.toLowerCase();
+  if (normalized.includes("jobs")) return "Opening jobs page";
+  if (normalized.includes("profile") || normalized.includes("account")) return "Opening your profile";
+  if (normalized.includes("dark")) return "Dark mode enabled";
+  if (normalized.includes("light")) return "Light mode enabled";
+  if (normalized.includes("contrast")) return "High contrast toggled";
+  if (normalized.includes("accessibility")) return "Opening accessibility settings";
+  if (normalized.includes("scroll")) return "Scrolling page";
+  if (normalized.includes("back")) return "Going back";
+  if (normalized.includes("read")) return "Reading page aloud";
+
+  return "Command executed";
+}

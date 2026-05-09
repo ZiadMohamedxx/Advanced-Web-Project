@@ -41,6 +41,7 @@
     "@radix-ui/react-toggle": "^1.1.9",
     "@radix-ui/react-toggle-group": "^1.1.10",
     "@radix-ui/react-tooltip": "^1.2.7",
+    "@react-oauth/google": "^0.13.5",
     "@tanstack/react-query": "^5.83.0",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
@@ -51,8 +52,10 @@
     "dotenv": "^17.4.2",
     "embla-carousel-react": "^8.6.0",
     "express": "^5.2.1",
+    "express-session": "^1.19.0",
     "form-data": "^4.0.5",
     "framer-motion": "^12.35.0",
+    "google-auth-library": "^10.6.2",
     "input-otp": "^1.4.2",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.462.0",
@@ -63,6 +66,10 @@
     "node-fetch": "^3.3.2",
     "nodemailer": "^8.0.2",
     "nodemon": "^3.1.14",
+    "openai": "^6.34.0",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
+    "passport-local": "^1.0.0",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
@@ -103,5 +110,13 @@
   "main": "index.js",
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ZiadMohamedxx/Advanced-Web-Project.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ZiadMohamedxx/Advanced-Web-Project/issues"
+  },
+  "homepage": "https://github.com/ZiadMohamedxx/Advanced-Web-Project#readme"
 }

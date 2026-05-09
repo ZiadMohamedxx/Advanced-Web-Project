@@ -30,5 +30,5 @@ const ApplicationSchema = new mongoose.Schema(
 // Prevent a candidate from applying to the same job twice
 ApplicationSchema.index({ job: 1, candidate: 1 }, { unique: true });
 
-const Application = mongoose.model("Application", ApplicationSchema);
+const Application = mongoose.model("Application", ApplicationSchema) || mongoose.models.Application;
 export default Application;

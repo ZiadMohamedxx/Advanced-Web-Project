@@ -1,3 +1,5 @@
+import { useSearchParams } from "react-router-dom";
+
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -80,6 +82,8 @@ function parseCV(text: string) {
   return { firstName, lastName, phone, email };
 }
 
+// ─── Main Component ───────────────────────────────────────────────────────────
+
 export default function SignUp() {
   const { t } = useLanguage();
   const [userType, setUserType] = useState<UserType>(null);
@@ -98,6 +102,19 @@ export default function SignUp() {
 
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const [params] = useSearchParams();
+
+const googleData = params.get("googleData");
+
+let parsedData = null;
+
+if (googleData) {
+  parsedData = JSON.parse(decodeURIComponent(googleData));
+}
+
+
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

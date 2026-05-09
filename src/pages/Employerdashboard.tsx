@@ -8,7 +8,7 @@ import {
   Users, Briefcase, CheckCircle2, XCircle, Clock,
   ChevronDown, ChevronUp, Star, Mail, Phone,
   FileText, Building2, Loader2, AlertCircle,
-  PlusCircle, MapPin, Wifi, ArrowLeft, Lock
+  PlusCircle, MapPin, Wifi, ArrowLeft, Lock, Unlock
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { API_BASE_URL } from "@/lib/api";
@@ -159,7 +159,6 @@ export default function EmployerDashboard() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
 
-      // Update job status locally
       setDashboard((prev) =>
         prev.map((entry) =>
           entry.job._id === jobId
@@ -168,6 +167,33 @@ export default function EmployerDashboard() {
         )
       );
       toast({ title: t("employerDashboard.jobClosed"), description: `"${jobTitle}" ${t("employerDashboard.jobClosedDesc")}` });
+    } catch (err: any) {
+      toast({ title: t("employerDashboard.errorTitle"), description: err.message, variant: "destructive" });
+    } finally {
+      setClosing((prev) => ({ ...prev, [jobId]: false }));
+    }
+  };
+
+  // ── Reopen job ──
+  const handleReopenJob = async (jobId: string, jobTitle: string) => {
+    setClosing((prev) => ({ ...prev, [jobId]: true }));
+    try {
+      const token = localStorage.getItem("token");
+      const res   = await fetch(`${API_BASE_URL}/jobs/${jobId}/reopen`, {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+
+      setDashboard((prev) =>
+        prev.map((entry) =>
+          entry.job._id === jobId
+            ? { ...entry, job: { ...entry.job, status: "open" } }
+            : entry
+        )
+      );
+      toast({ title: "Job Reopened", description: `"${jobTitle}" is now open for applications.` });
     } catch (err: any) {
       toast({ title: t("employerDashboard.errorTitle"), description: err.message, variant: "destructive" });
     } finally {
@@ -190,7 +216,6 @@ export default function EmployerDashboard() {
       {/* ── Header ── */}
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
 
-        {/* ✅ Back button */}
         <button
           onClick={() => navigate("/employer-portal")}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
@@ -255,7 +280,6 @@ export default function EmployerDashboard() {
 
               {/* Job header */}
               <CardHeader className="flex flex-row items-center justify-between gap-4 pb-3">
-                {/* Left: clickable area to expand */}
                 <button onClick={() => toggleExpand(entry.job._id)} className="flex items-center gap-3 flex-1 text-left">
                   <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                     <Briefcase className="h-5 w-5 text-primary" />
@@ -276,13 +300,12 @@ export default function EmployerDashboard() {
                   </div>
                 </button>
 
-                {/* Right: applicants count + close button + expand */}
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="text-sm font-medium text-muted-foreground hidden sm:block">
                     {entry.totalApplicants} {entry.totalApplicants !== 1 ? t("employerDashboard.applicants") : t("employerDashboard.applicant")}
                   </span>
 
-                  {/* ✅ Close Job button — only show if open */}
+                  {/* Close button — only when open */}
                   {entry.job.status === "open" && (
                     <Button
                       size="sm"
@@ -299,6 +322,26 @@ export default function EmployerDashboard() {
                         : <Lock className="h-3 w-3" />
                       }
                       {t("employerDashboard.closeJob")}
+                    </Button>
+                  )}
+
+                  {/* Reopen button — only when closed */}
+                  {entry.job.status === "closed" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs gap-1 border-green-300 text-green-600 hover:bg-green-50 shrink-0"
+                      disabled={closing[entry.job._id]}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleReopenJob(entry.job._id, entry.job.title);
+                      }}
+                    >
+                      {closing[entry.job._id]
+                        ? <Loader2 className="h-3 w-3 animate-spin" />
+                        : <Unlock className="h-3 w-3" />
+                      }
+                      Reopen Job
                     </Button>
                   )}
 
