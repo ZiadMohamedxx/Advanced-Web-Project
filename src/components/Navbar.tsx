@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, Accessibility, Sun, Moon, Building2, Globe } from "lucide-react";
+import { Menu, X, Accessibility, Sun, Moon, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { API_BASE_URL } from "@/lib/api";
-import { useLanguage } from "@/contexts/LanguageContext";
+
 
 type StoredUser = {
   id: string;
