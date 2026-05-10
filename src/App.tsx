@@ -6,7 +6,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AccessibilityProvider } from "./hooks/useAccessibility";
 
 import Layout from "./components/Layout";
@@ -74,7 +73,6 @@ function RoleRedirect() {
 
 const App = () => (
   <AccessibilityProvider> 
-    <LanguageProvider>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
@@ -105,7 +103,6 @@ const App = () => (
 
         </TooltipProvider>
       </QueryClientProvider>
-    </LanguageProvider>
   </AccessibilityProvider>
 );
 
