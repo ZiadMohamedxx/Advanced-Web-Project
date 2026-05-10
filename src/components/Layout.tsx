@@ -1,14 +1,13 @@
 import { Outlet } from "react-router-dom";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
-import { useLanguage } from "@/contexts/LanguageContext";
 import AccessibilityButton from "@/components/AccessibilityButton";
 import AccessibilityPanel from "@/components/AccessibilityPanel";
 import FloatingVoiceAssistant from "@/components/FloatingVoiceAssistant";
 import CommandCheatSheet from "@/components/CommandCheatSheet";
 
 export default function Layout() {
-  const { t } = useLanguage();
+
 
   return (
     <div className="min-h-screen flex flex-col">
