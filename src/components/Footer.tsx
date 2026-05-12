@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Accessibility } from "lucide-react";
-
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const guestLinksConfig = [
   {
