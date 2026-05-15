@@ -7,11 +7,13 @@ const UserSchema = new mongoose.Schema(
       enum: ["candidate", "corporate"],
       required: true,
     },
+
     name: {
       type: String,
       required: true,
       trim: true,
     },
+
     email: {
       type: String,
       required: true,
@@ -19,10 +21,17 @@ const UserSchema = new mongoose.Schema(
       trim: true,
       lowercase: true,
     },
+
     password: {
       type: String,
       default: null,
     },
+
+    googleId: {
+      type: String,
+      default: "",
+    },
+
     phone: {
       type: String,
       default: "",
@@ -32,31 +41,68 @@ const UserSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+
     preferredAccommodations: {
       type: String,
       default: "",
     },
+
     cvPath: {
       type: String,
       default: null,
+    },
+
+    cvExtractedData: {
+      skills: {
+        type: [String],
+        default: [],
+      },
+      experienceYears: {
+        type: Number,
+        default: 0,
+      },
+      education: {
+        type: [String],
+        default: [],
+      },
+      jobTitles: {
+        type: [String],
+        default: [],
+      },
+      languages: {
+        type: [String],
+        default: [],
+      },
+      seniorityLevel: {
+        type: String,
+        default: "",
+      },
+      keywords: {
+        type: [String],
+        default: [],
+      },
     },
 
     companyName: {
       type: String,
       default: "",
     },
+
     contactFirstName: {
       type: String,
       default: "",
     },
+
     contactLastName: {
       type: String,
       default: "",
     },
+
     industry: {
       type: String,
       default: "",
     },
+
     companySize: {
       type: String,
       default: "",
@@ -66,19 +112,20 @@ const UserSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    resetPasswordToken: {
-  type: String,
-},
 
-resetPasswordExpire: {
-  type: Date,
-},
+    resetPasswordToken: {
+      type: String,
+    },
+
+    resetPasswordExpire: {
+      type: Date,
+    },
   },
   {
     timestamps: true,
   }
 );
 
-const User = mongoose.model("User", UserSchema) || mongoose.models.User;
+const User = mongoose.models.User || mongoose.model("User", UserSchema);
 
 export default User;

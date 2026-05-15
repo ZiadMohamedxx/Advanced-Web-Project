@@ -5,6 +5,7 @@ import {
   getEmployerDashboard,
   updateApplicationStatus,
   getAllJobs,
+  getJobsWithMyMatches,
   getJobById,
   applyForJob,
   getMyApplications,
@@ -20,6 +21,9 @@ router.get("/my-jobs", authMiddleware, getMyJobs);
 router.get("/dashboard", authMiddleware, getEmployerDashboard);
 router.patch("/applications/:applicationId", authMiddleware, updateApplicationStatus);
 router.get("/my-applications", authMiddleware, getMyApplications);
+
+router.get("/matches/me", authMiddleware, getJobsWithMyMatches);
+
 router.get("/", authMiddleware, getAllJobs);
 router.get("/:jobId", authMiddleware, getJobById);
 router.post("/:jobId/apply", authMiddleware, applyForJob);

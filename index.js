@@ -7,6 +7,7 @@ import authRoutes from "./Routers/auth.js";
 import jobRoutes from "./Routers/job.js";
 import ocrRoutes from "./Routers/ocr.js";
 import accessibilityRouter from "./Routers/accessibility.js";
+import applicationRoutes from "./Routers/application.js";
 import session from "express-session";
 import passport from "./passport.js";
 
@@ -60,6 +61,7 @@ app.use("/auth", authRoutes);
 app.use("/jobs", jobRoutes);
 app.use("/ocr", ocrRoutes);
 app.use("/accessibility", accessibilityRouter);
+app.use("/applications", applicationRoutes);
 
 // Start Server
 app.listen(port, () => {

@@ -2,6 +2,10 @@ import Job from "../Models/job.js";
 import Application from "../Models/application.js";
 import User from "../Models/user.js";
 import sendEmail from "../utils/sendEmail.js";
+import {
+  getAllJobsWithCandidateMatches,
+  calculateCandidateJobScore,
+} from "../utils/jobMatchingService.js";
 
 // ─── EMPLOYER: Post a new job ─────────────────────────────────────────────────
 export const postJob = async (req, res) => {
@@ -18,61 +22,134 @@ export const postJob = async (req, res) => {
     } = req.body;
 
     if (!title || !description) {
-      return res.status(400).json({ message: "Title and description are required." });
+      return res.status(400).json({
+        message: "Title and description are required.",
+      });
     }
 
     const job = await Job.create({
-      employer: req.userId, // set by auth middleware
+      employer: req.userId,
       title,
       description,
       location: location || "",
       workType: workType || "onsite",
-      requiredSkills: requiredSkills ? requiredSkills.split(",").map((s) => s.trim()) : [],
+      requiredSkills: requiredSkills
+        ? requiredSkills.split(",").map((skill) => skill.trim()).filter(Boolean)
+        : [],
       physicalRequirements: physicalRequirements || "",
       disabilityAccommodations: disabilityAccommodations || "",
       industry: industry || "",
     });
 
-    res.status(201).json({ message: "Job posted successfully", job });
+    res.status(201).json({
+      message: "Job posted successfully",
+      job,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      message: error.message,
+    });
   }
 };
 
 // ─── EMPLOYER: Get all jobs posted by this employer ──────────────────────────
 export const getMyJobs = async (req, res) => {
   try {
-    const jobs = await Job.find({ employer: req.userId }).sort({ createdAt: -1 });
-    res.status(200).json({ jobs });
+    const jobs = await Job.find({ employer: req.userId }).sort({
+      createdAt: -1,
+    });
+
+    res.status(200).json({
+      jobs,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      message: error.message,
+    });
   }
 };
 
-// ─── EMPLOYER: Get dashboard — jobs + applicants per job ─────────────────────
+const buildApplicationWithRealMatch = async ({ application, job }) => {
+  const appObject =
+    typeof application.toObject === "function"
+      ? application.toObject()
+      : application;
+
+  let matchResult = {
+    score: Number(appObject.compatibilityScore) || 0,
+    matchedSkills: [],
+    missingSkills: [],
+    matchReasons: ["No CV match data available for this candidate"],
+    accessibilityReasons: ["No accessibility match data available"],
+  };
+
+  if (appObject.candidate && appObject.candidate.role !== "corporate") {
+    matchResult = calculateCandidateJobScore({
+      candidate: appObject.candidate,
+      job,
+    });
+  }
+
+  if (application.compatibilityScore !== matchResult.score) {
+    application.compatibilityScore = matchResult.score;
+    await application.save();
+  }
+
+  return {
+    ...appObject,
+    compatibilityScore: matchResult.score,
+    realMatchScore: matchResult.score,
+    matchedSkills: matchResult.matchedSkills,
+    missingSkills: matchResult.missingSkills,
+    matchReasons: matchResult.matchReasons,
+    accessibilityReasons: matchResult.accessibilityReasons,
+  };
+};
+
+// ─── EMPLOYER: Get dashboard — jobs + applicants per job with real AI match ───
 export const getEmployerDashboard = async (req, res) => {
   try {
-    // All jobs by this employer
-    const jobs = await Job.find({ employer: req.userId }).sort({ createdAt: -1 });
+    const jobs = await Job.find({ employer: req.userId }).sort({
+      createdAt: -1,
+    });
 
-    // For each job, get applications with full candidate info
     const jobsWithApplicants = await Promise.all(
       jobs.map(async (job) => {
         const applications = await Application.find({ job: job._id })
-          .populate("candidate", "name email phone disabilityType preferredAccommodations cvPath")
+          .populate(
+            "candidate",
+            "name email phone role disabilityType preferredAccommodations cvPath cvExtractedData"
+          )
           .sort({ compatibilityScore: -1 });
+
+        const applicationsWithRealMatches = await Promise.all(
+          applications.map((application) =>
+            buildApplicationWithRealMatch({
+              application,
+              job,
+            })
+          )
+        );
+
+        applicationsWithRealMatches.sort(
+          (a, b) => (b.realMatchScore || 0) - (a.realMatchScore || 0)
+        );
 
         return {
           job,
-          applicants: applications,
-          totalApplicants: applications.length,
+          applicants: applicationsWithRealMatches,
+          totalApplicants: applicationsWithRealMatches.length,
         };
       })
     );
 
-    res.status(200).json({ dashboard: jobsWithApplicants });
+    res.status(200).json({
+      dashboard: jobsWithApplicants,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      message: error.message,
+    });
   }
 };
 
@@ -83,26 +160,38 @@ export const updateApplicationStatus = async (req, res) => {
     const { status } = req.body;
 
     if (!["accepted", "rejected"].includes(status)) {
-      return res.status(400).json({ message: "Status must be 'accepted' or 'rejected'." });
+      return res.status(400).json({
+        message: "Status must be 'accepted' or 'rejected'.",
+      });
     }
 
-    const application = await Application.findById(applicationId).populate("job");
+    const application = await Application.findById(applicationId).populate(
+      "job"
+    );
 
     if (!application) {
-      return res.status(404).json({ message: "Application not found." });
+      return res.status(404).json({
+        message: "Application not found.",
+      });
     }
 
-    // Make sure this employer owns the job
     if (application.job.employer.toString() !== req.userId) {
-      return res.status(403).json({ message: "Unauthorized." });
+      return res.status(403).json({
+        message: "Unauthorized.",
+      });
     }
 
     application.status = status;
     await application.save();
 
-    res.status(200).json({ message: `Application ${status}`, application });
+    res.status(200).json({
+      message: `Application ${status}`,
+      application,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      message: error.message,
+    });
   }
 };
 
@@ -110,75 +199,182 @@ export const updateApplicationStatus = async (req, res) => {
 export const closeJob = async (req, res) => {
   try {
     const { jobId } = req.params;
-    console.log("Closing job:", jobId); // ← add this line temporarily
 
     const job = await Job.findById(jobId);
-    console.log("Job found:", job);    // ← add this line temporarily
 
-    if (!job) return res.status(404).json({ message: "Job not found." });
-    if (job.employer.toString() !== req.userId) return res.status(403).json({ message: "Unauthorized." });
+    if (!job) {
+      return res.status(404).json({
+        message: "Job not found.",
+      });
+    }
+
+    if (job.employer.toString() !== req.userId) {
+      return res.status(403).json({
+        message: "Unauthorized.",
+      });
+    }
 
     job.status = "closed";
     await job.save();
 
-    res.status(200).json({ message: "Job closed successfully.", job });
+    res.status(200).json({
+      message: "Job closed successfully.",
+      job,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      message: error.message,
+    });
   }
 };
+
+// ─── EMPLOYER: Reopen a job ──────────────────────────────────────────────────
 export const reopenJob = async (req, res) => {
   try {
     const { jobId } = req.params;
 
     const job = await Job.findById(jobId);
 
-    if (!job) return res.status(404).json({ message: "Job not found." });
-    if (job.employer.toString() !== req.userId) return res.status(403).json({ message: "Unauthorized." });
+    if (!job) {
+      return res.status(404).json({
+        message: "Job not found.",
+      });
+    }
+
+    if (job.employer.toString() !== req.userId) {
+      return res.status(403).json({
+        message: "Unauthorized.",
+      });
+    }
 
     job.status = "open";
     await job.save();
 
-    res.status(200).json({ message: "Job reopened successfully.", job });
+    res.status(200).json({
+      message: "Job reopened successfully.",
+      job,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      message: error.message,
+    });
   }
 };
+
+// ─── PUBLIC/AUTHED: Get all open jobs ─────────────────────────────────────────
 export const getAllJobs = async (req, res) => {
   try {
-    const jobs = await Job.find({ status: "open" })
+    const jobs = await Job.find({
+      $or: [{ status: "open" }, { status: { $exists: false } }],
+    })
       .populate("employer", "name companyName industry")
       .sort({ createdAt: -1 });
 
-    res.status(200).json({ jobs });
+    res.status(200).json({
+      jobs,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      message: error.message,
+    });
   }
 };
 
-// ─── CANDIDATE: Apply for a job ───────────────────────────────────────────────
+// ─── CANDIDATE: Get all jobs with CV match percentage ─────────────────────────
+export const getJobsWithMyMatches = async (req, res) => {
+  try {
+    const candidate = await User.findById(req.userId);
+
+    if (!candidate) {
+      return res.status(404).json({
+        message: "Candidate not found.",
+      });
+    }
+
+    if (candidate.role !== "candidate") {
+      const jobs = await Job.find({
+        $or: [{ status: "open" }, { status: { $exists: false } }],
+      })
+        .populate("employer", "name companyName industry")
+        .sort({ createdAt: -1 });
+
+      return res.status(200).json({
+        jobs,
+        hasMatchData: false,
+      });
+    }
+
+    const jobs = await getAllJobsWithCandidateMatches({
+      candidate,
+    });
+
+    return res.status(200).json({
+      jobs,
+      hasMatchData: true,
+      cvExtractedData: candidate.cvExtractedData || null,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message,
+    });
+  }
+};
+
+// ─── CANDIDATE: Apply for a job with real AI compatibility score ─────────────
 export const applyForJob = async (req, res) => {
   try {
     const { jobId } = req.params;
 
     const job = await Job.findById(jobId).populate("employer");
-    if (!job) return res.status(404).json({ message: "Job not found." });
-    if (job.status === "closed") return res.status(400).json({ message: "This job is closed." });
 
-    const existing = await Application.findOne({ job: jobId, candidate: req.userId });
-    if (existing) return res.status(400).json({ message: "You have already applied for this job." });
+    if (!job) {
+      return res.status(404).json({
+        message: "Job not found.",
+      });
+    }
+
+    if (job.status === "closed") {
+      return res.status(400).json({
+        message: "This job is closed.",
+      });
+    }
+
+    const existing = await Application.findOne({
+      job: jobId,
+      candidate: req.userId,
+    });
+
+    if (existing) {
+      return res.status(400).json({
+        message: "You have already applied for this job.",
+      });
+    }
 
     const candidate = await User.findById(req.userId);
-    if (!candidate) return res.status(404).json({ message: "Candidate not found." });
 
-    const score = Math.floor(Math.random() * 30) + 60;
+    if (!candidate) {
+      return res.status(404).json({
+        message: "Candidate not found.",
+      });
+    }
+
+    if (candidate.role !== "candidate") {
+      return res.status(403).json({
+        message: "Only candidates can apply for jobs.",
+      });
+    }
+
+    const matchResult = calculateCandidateJobScore({
+      candidate,
+      job,
+    });
 
     const application = await Application.create({
       job: jobId,
       candidate: req.userId,
-      compatibilityScore: score,
+      compatibilityScore: matchResult.score,
     });
 
-    // 📩 EMAIL TO EMPLOYER
     if (job.employer?.email) {
       await sendEmail({
         to: job.employer.email,
@@ -187,31 +383,39 @@ export const applyForJob = async (req, res) => {
           <h2>New Application</h2>
           <p>${candidate.name} applied for <b>${job.title}</b></p>
           <p>Email: ${candidate.email}</p>
+          <p>Compatibility Score: ${matchResult.score}%</p>
         `,
       });
     }
 
-    // 📩 EMAIL TO CANDIDATE
     if (candidate.email) {
-      const companyName = job.employer?.companyName || job.employer?.name || "Company";
+      const companyName =
+        job.employer?.companyName || job.employer?.name || "Company";
 
       await sendEmail({
         to: candidate.email,
-        subject: `Application Received`,
+        subject: "Application Received",
         html: `
           <h2>Application Received</h2>
           <p>You applied for <b>${job.title}</b> at <b>${companyName}</b></p>
+          <p>Your match score for this job is <b>${matchResult.score}%</b>.</p>
         `,
       });
     }
 
     res.status(201).json({
-      message: "Application submitted and emails sent!",
+      message: "Application submitted successfully!",
       application,
+      matchScore: matchResult.score,
+      matchedSkills: matchResult.matchedSkills,
+      missingSkills: matchResult.missingSkills,
+      matchReasons: matchResult.matchReasons,
+      accessibilityReasons: matchResult.accessibilityReasons,
     });
-
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      message: error.message,
+    });
   }
 };
 
@@ -222,24 +426,38 @@ export const getMyApplications = async (req, res) => {
       .populate("job", "title location workType industry employer")
       .sort({ createdAt: -1 });
 
-    res.status(200).json({ applications });
+    res.status(200).json({
+      applications,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      message: error.message,
+    });
   }
 };
 
+// ─── Get job by id ────────────────────────────────────────────────────────────
 export const getJobById = async (req, res) => {
   try {
     const { jobId } = req.params;
 
-    const job = await Job.findById(jobId).populate("employer", "name companyName industry");
+    const job = await Job.findById(jobId).populate(
+      "employer",
+      "name companyName industry"
+    );
 
     if (!job) {
-      return res.status(404).json({ message: "Job not found." });
+      return res.status(404).json({
+        message: "Job not found.",
+      });
     }
 
-    res.status(200).json({ job });
+    res.status(200).json({
+      job,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      message: error.message,
+    });
   }
 };
