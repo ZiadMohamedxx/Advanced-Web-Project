@@ -1,5 +1,5 @@
-import { useEffect } from "react"
-import { useNavigate, useSearchParams } from "react-router-dom"
+import { useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -7,7 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
-import { AccessibilityProvider } from "./hooks/useAccessibility";
+import { AccessibilityProvider } from "@/hooks/useAccessibility";
 
 import Layout from "./components/Layout";
 import Index from "./pages/Index";
@@ -25,45 +25,44 @@ import Profile from "./pages/Profile";
 import EmployerDashboard from "./pages/Employerdashboard";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
-
+import MatchingJobs from "./pages/MatchingJobs";
 
 const queryClient = new QueryClient();
 
-
 function AuthSuccess() {
-  const [params] = useSearchParams()
-  const navigate = useNavigate()
+  const [params] = useSearchParams();
+  const navigate = useNavigate();
 
- useEffect(() => {
-  const token = params.get("token");
-  const user = params.get("user");
+  useEffect(() => {
+    const token = params.get("token");
+    const user = params.get("user");
 
-  if (token && user) {
+    if (token && user) {
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", decodeURIComponent(user));
+      navigate("/jobs");
+    }
+  }, [params, navigate]);
 
-    localStorage.setItem("token", token);
-
-    localStorage.setItem(
-      "user",
-      decodeURIComponent(user)
-    );
-
-    navigate("/jobs");
-  }
-}, [params, navigate]);
-
-  return <p>Signing you in...</p>
+  return <p>Signing you in...</p>;
 }
+
 function RoleRedirect() {
   const navigate = useNavigate();
 
   useEffect(() => {
     const user = localStorage.getItem("user");
-    if (!user) return; // not signed in → stay on Index
+
+    if (!user) return;
 
     try {
       const parsed = JSON.parse(user);
-      if (parsed.role === "candidate") navigate("/jobs", { replace: true });
-      else if (parsed.role === "corporate") navigate("/employer-portal", { replace: true });
+
+      if (parsed.role === "candidate") {
+        navigate("/jobs", { replace: true });
+      } else if (parsed.role === "corporate") {
+        navigate("/employer-portal", { replace: true });
+      }
     } catch {
       // invalid data → stay on Index
     }
@@ -73,8 +72,8 @@ function RoleRedirect() {
 }
 
 const App = () => (
-  <AccessibilityProvider> 
-    <LanguageProvider>
+  <LanguageProvider>
+    <AccessibilityProvider>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
@@ -83,30 +82,34 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route element={<Layout />}>
-                <Route path="/" element={<RoleRedirect />} />
+                <Route path="/" element={<Index />} />
                 <Route path="/candidate-portal" element={<CandidatePortal />} />
                 <Route path="/employer-portal" element={<EmployerPortal />} />
                 <Route path="/jobs" element={<Jobs />} />
                 <Route path="/accessibility" element={<AccessibilityPage />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/signup" element={<SignUp />} />
+                <Route path="/matching-jobs" element={<MatchingJobs />} />
                 <Route path="/signin" element={<SignIn />} />
                 <Route path="/profile" element={<Profile />} />
-                <Route path="/employer-dashboard" element={<EmployerDashboard />} />
+                <Route
+                  path="/employer-dashboard"
+                  element={<EmployerDashboard />}
+                />
                 <Route path="/apply/:jobId" element={<ApplyJob />} />
                 <Route path="/post-job" element={<PostJob />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password/:token" element={<ResetPassword />} />
               </Route>
-                <Route path="/auth/success" element={<AuthSuccess />} />
+
+              <Route path="/auth-success" element={<AuthSuccess />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
-
         </TooltipProvider>
       </QueryClientProvider>
-    </LanguageProvider>
-  </AccessibilityProvider>
+    </AccessibilityProvider>
+  </LanguageProvider>
 );
 
 export default App;
