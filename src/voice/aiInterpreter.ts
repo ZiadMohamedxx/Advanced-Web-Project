@@ -11,7 +11,7 @@ export interface IntentResult {
   rawResponse?: any;
 }
 
-const API_BASE_URL = "http://localhost:4000";
+const API_BASE_URL = "https://advanced-web-project-production-7144.up.railway.app";
 
 /**
  * Interpret user speech using OpenAI API
