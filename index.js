@@ -37,7 +37,7 @@ connection();
 // CORS
 app.use(
   cors({
-    origin: "advanced-web-project-production-7144.up.railway.app",
+    origin: "http://localhost:8080",
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
