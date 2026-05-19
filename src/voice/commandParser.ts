@@ -1,7 +1,9 @@
 /**
- * Voice Command Parser - Enhanced with Synonym Support
+ * Voice Command Parser - Enhanced with Synonym Support and Arabic
  * Smart pattern matching with confidence scoring and synonym support
  */
+
+import { normalizeCommand, isArabic, extractSearchQuery } from "@/voice/arabicNormalization";
 
 export interface CommandPattern {
   keywords: string[];
@@ -35,6 +37,8 @@ const FILLER_WORDS = new Set([
   "very", "really", "quite", "can", "could", "would", "should", "will", "do",
   "does", "did", "up", "down", "out", "in", "about", "on", "off", "enable",
   "disable", "activate", "deactivate",
+  // Arabic filler words
+  "في", "على", "من", "إلى", "هذا", "ذلك", "هي", "هو", "نعم", "لا",
 ]);
 
 const GLOBAL_SYNONYMS: Record<string, string[]> = {
@@ -56,10 +60,9 @@ export function getSynonyms(keyword: string): Set<string> {
 }
 
 export function normalizeText(text: string): string {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s]/g, "")
+  const normalized = normalizeCommand(text);
+
+  return normalized
     .split(/\s+/)
     .filter((word) => !FILLER_WORDS.has(word) && word.length > 0)
     .join(" ");

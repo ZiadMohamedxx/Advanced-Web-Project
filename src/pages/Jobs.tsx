@@ -111,6 +111,15 @@ export default function Jobs() {
   const { t, language } = useLanguage();
 
   useEffect(() => {
+    // Check for search parameter in URL (from voice search)
+    const params = new URLSearchParams(window.location.search);
+    const urlSearch = params.get("search");
+    if (urlSearch) {
+      setSearch(urlSearch);
+    }
+  }, []);
+
+  useEffect(() => {
     const token = localStorage.getItem("token");
 
     if (!token) {

@@ -260,6 +260,22 @@ export function scroll(direction: "up" | "down" | "top" | "bottom", amount: numb
 }
 
 /**
+ * Search for jobs with query and navigate to jobs page
+ */
+export function searchJobsWithQuery(query: string): boolean {
+  try {
+    if (!query.trim()) return false;
+
+    // Navigate to jobs page
+    window.location.href = `/jobs?search=${encodeURIComponent(query)}`;
+    return true;
+  } catch (error) {
+    console.error("Failed to search jobs:", error);
+    return false;
+  }
+}
+
+/**
  * Search for query
  */
 export function searchForQuery(query: string): boolean {
