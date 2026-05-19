@@ -6,7 +6,8 @@ type CommandGroup = keyof ReturnType<typeof getAvailableCommands>;
 
 const groupLabels: Record<CommandGroup, string> = {
   navigation: "🧭 Navigation",
-  scroll: "📜 Scrolling",
+  search: "🔍 Search Jobs",
+  scrolling: "📜 Scrolling",
   accessibility: "♿ Accessibility",
   reading: "📖 Reading",
   utility: "⚙️ Utility",
@@ -14,19 +15,25 @@ const groupLabels: Record<CommandGroup, string> = {
 
 // Command aliases for reference
 const commandExamples: Record<string, string[]> = {
-  "open jobs": ["jobs page", "show jobs"],
+  "open jobs": ["go to jobs", "jobs page"],
   "go home": ["open home", "home page"],
-  "open profile": ["my profile", "profile page"],
-  "open about": ["open about page"],
-  "open candidate portal": ["candidate portal"],
-  "open employer portal": ["employer portal"],
-  "scroll top": ["go to top", "top of page"],
-  "scroll bottom": ["go to bottom", "bottom of page"],
+  "open profile": ["go to profile"],
+  "افتح الوظايف": ["روح للوظايف"],
+  "روح للرئيسية": ["افتح الصفحة الرئيسية"],
+  "افتح البروفايل": ["روح للبروفايل"],
+  "scroll down": ["scroll"],
+  "scroll up": [],
+  "انزل تحت": ["انزل"],
+  "اطلع فوق": ["اطلع"],
   "read this page": ["read page", "start reading"],
-  "stop reading": ["stop"],
-  "refresh page": ["reload", "reload page"],
-  "open accessibility panel": ["open accessibility"],
-  "close accessibility panel": ["close accessibility"],
+  "اقرأ الصفحة": ["اقرا الصفحة"],
+  "stop reading": ["pause reading"],
+  "dark mode on": ["enable dark mode"],
+  "شغل الوضع الليلي": [],
+  "search frontend jobs": ["find frontend"],
+  "دور على وظائف فرونت اند": [],
+  "refresh page": ["reload"],
+  "اعمل ريفريش": [],
 };
 
 export default function CommandCheatSheet() {
