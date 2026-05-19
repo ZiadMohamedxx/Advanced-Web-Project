@@ -1,1 +1,1 @@
-export const API_BASE_URL = "https://advanced-web-project-production-7144.up.railway.app";
+export const API_BASE_URL = "http://localhost:4000";

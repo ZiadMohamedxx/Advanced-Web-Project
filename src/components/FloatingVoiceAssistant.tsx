@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { Mic, Square, Loader2, X, HelpCircle } from "lucide-react";
 import { normalizeCommand, executeExactCommand } from "@/voice/exactCommandMatcher";
 
-const API_BASE_URL = "https://advanced-web-project-production-7144.up.railway.app";
+const API_BASE_URL = "http://localhost:4000";
 
 type AssistantState = "idle" | "listening" | "processing" | "success" | "error";
 

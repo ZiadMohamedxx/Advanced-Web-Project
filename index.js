@@ -16,7 +16,7 @@ dotenv.config();
 console.log("OPENAI KEY LOADED:", !!process.env.OPENAI_API_KEY);
 
 const app = express();
-const port = process.env.PORT || 4000;
+const port = 4000;
 
 // Session
 app.use(
@@ -37,10 +37,7 @@ connection();
 // CORS
 app.use(
   cors({
-    origin: [
-  "http://localhost:8080",
-  "https://inclusive-hire.netlify.app",
-],
+    origin: "http://localhost:8080",
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
