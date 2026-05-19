@@ -16,6 +16,7 @@ import {
   toggleHighContrast,
   toggleDarkMode,
   searchForQuery,
+  searchJobsWithQuery,
   goBack,
   refreshPage,
 } from "@/voice/actions";
@@ -29,6 +30,9 @@ export const navigationCommands: Record<string, CommandConfig> = {
     patterns: [
       { keywords: ["home"], actionWords: ["go", "open", "back", "return"], minConfidence: 60 },
       { keywords: ["homepage"], minConfidence: 65 },
+      // Arabic patterns
+      { keywords: ["بيت", "رئيسية"], actionWords: ["روح", "افتح", "رجع"], minConfidence: 60 },
+      { keywords: ["بيت"], minConfidence: 65 },
     ],
     handler: () => navigateToUrl("/"),
   },
@@ -40,6 +44,9 @@ export const navigationCommands: Record<string, CommandConfig> = {
     patterns: [
       { keywords: ["jobs"], actionWords: ["open", "go", "show", "take", "view", "find"], minConfidence: 60 },
       { keywords: ["job", "listings"], minConfidence: 65 },
+      // Arabic patterns
+      { keywords: ["وظائف"], actionWords: ["افتح", "روح", "اظهر", "شوف"], minConfidence: 60 },
+      { keywords: ["وظيفة", "عروض"], minConfidence: 65 },
     ],
     handler: () => navigateToUrl("/jobs"),
   },
@@ -51,6 +58,9 @@ export const navigationCommands: Record<string, CommandConfig> = {
     patterns: [
       { keywords: ["profile"], actionWords: ["open", "go", "show", "view"], minConfidence: 60 },
       { keywords: ["account"], minConfidence: 65 },
+      // Arabic patterns
+      { keywords: ["بروفايل", "ملفي"], actionWords: ["افتح", "روح", "اظهر"], minConfidence: 60 },
+      { keywords: ["حساب"], minConfidence: 65 },
     ],
     handler: () => navigateToUrl("/profile"),
   },
@@ -61,6 +71,8 @@ export const navigationCommands: Record<string, CommandConfig> = {
     minConfidence: 65,
     patterns: [
       { keywords: ["about"], actionWords: ["open", "go", "show"], minConfidence: 65 },
+      // Arabic patterns
+      { keywords: ["عنا", "حول"], actionWords: ["افتح", "روح", "اظهر"], minConfidence: 65 },
     ],
     handler: () => navigateToUrl("/about"),
   },
@@ -75,6 +87,9 @@ export const scrollingCommands: Record<string, CommandConfig> = {
     patterns: [
       { keywords: ["scroll", "down"], minConfidence: 60 },
       { keywords: ["down"], actionWords: ["scroll"], minConfidence: 65 },
+      // Arabic patterns
+      { keywords: ["انزل", "تحت"], minConfidence: 60 },
+      { keywords: ["تحت"], actionWords: ["انزل"], minConfidence: 65 },
     ],
     handler: () => scroll("down", 300),
   },
@@ -86,6 +101,9 @@ export const scrollingCommands: Record<string, CommandConfig> = {
     patterns: [
       { keywords: ["scroll", "up"], minConfidence: 60 },
       { keywords: ["up"], actionWords: ["scroll"], minConfidence: 65 },
+      // Arabic patterns
+      { keywords: ["اطلع", "فوق"], minConfidence: 60 },
+      { keywords: ["فوق"], actionWords: ["اطلع"], minConfidence: 65 },
     ],
     handler: () => scroll("up", 300),
   },
@@ -96,6 +114,8 @@ export const scrollingCommands: Record<string, CommandConfig> = {
     minConfidence: 65,
     patterns: [
       { keywords: ["top"], actionWords: ["go", "scroll"], minConfidence: 65 },
+      // Arabic patterns
+      { keywords: ["أعلى"], actionWords: ["روح", "انزل"], minConfidence: 65 },
     ],
     handler: () => scroll("top"),
   },
@@ -106,6 +126,8 @@ export const scrollingCommands: Record<string, CommandConfig> = {
     minConfidence: 65,
     patterns: [
       { keywords: ["bottom"], actionWords: ["go", "scroll"], minConfidence: 65 },
+      // Arabic patterns
+      { keywords: ["آخر", "نهاية"], actionWords: ["روح", "انزل"], minConfidence: 65 },
     ],
     handler: () => scroll("bottom"),
   },
@@ -120,6 +142,9 @@ export const ttsCommands: Record<string, CommandConfig> = {
     patterns: [
       { keywords: ["read", "page"], minConfidence: 55 },
       { keywords: ["read"], actionWords: ["page", "this", "all"], minConfidence: 60 },
+      // Arabic patterns
+      { keywords: ["اقرا", "صفحة"], minConfidence: 55 },
+      { keywords: ["اقرا"], actionWords: ["صفحة", "هذي", "كل"], minConfidence: 60 },
     ],
     handler: () => readPageContent(),
   },
@@ -131,6 +156,8 @@ export const ttsCommands: Record<string, CommandConfig> = {
     patterns: [
       { keywords: ["read", "selected"], minConfidence: 60 },
       { keywords: ["read", "highlighted"], minConfidence: 60 },
+      // Arabic patterns
+      { keywords: ["اقرا", "محدد"], minConfidence: 60 },
     ],
     handler: () => readSelectedText(),
   },
@@ -141,6 +168,8 @@ export const ttsCommands: Record<string, CommandConfig> = {
     minConfidence: 55,
     patterns: [
       { keywords: ["pause"], minConfidence: 55 },
+      // Arabic patterns
+      { keywords: ["وقف"], minConfidence: 55 },
     ],
     handler: () => pauseResumeSpeech(),
   },
@@ -152,6 +181,9 @@ export const ttsCommands: Record<string, CommandConfig> = {
     patterns: [
       { keywords: ["resume"], minConfidence: 55 },
       { keywords: ["continue"], minConfidence: 60 },
+      // Arabic patterns
+      { keywords: ["كمل"], minConfidence: 55 },
+      { keywords: ["استمر"], minConfidence: 60 },
     ],
     handler: () => pauseResumeSpeech(),
   },
@@ -163,6 +195,9 @@ export const ttsCommands: Record<string, CommandConfig> = {
     patterns: [
       { keywords: ["stop"], actionWords: ["reading", "audio"], minConfidence: 50 },
       { keywords: ["stop", "reading"], minConfidence: 50 },
+      // Arabic patterns
+      { keywords: ["وقف"], actionWords: ["القراية", "الصوت"], minConfidence: 50 },
+      { keywords: ["وقف", "القراية"], minConfidence: 50 },
     ],
     handler: () => stopSpeech(),
   },
@@ -177,6 +212,9 @@ export const accessibilityCommands: Record<string, CommandConfig> = {
     patterns: [
       { keywords: ["accessibility"], actionWords: ["open"], minConfidence: 60 },
       { keywords: ["settings"], minConfidence: 65 },
+      // Arabic patterns
+      { keywords: ["اكسيسيبيلتي", "الوصول"], actionWords: ["افتح"], minConfidence: 60 },
+      { keywords: ["اعدادات"], minConfidence: 65 },
     ],
     handler: () => openAccessibilityPanel(),
   },
@@ -189,6 +227,9 @@ export const accessibilityCommands: Record<string, CommandConfig> = {
       { keywords: ["increase", "text"], minConfidence: 55 },
       { keywords: ["larger", "font"], minConfidence: 60 },
       { keywords: ["bigger"], minConfidence: 65 },
+      // Arabic patterns
+      { keywords: ["زود", "نص"], minConfidence: 55 },
+      { keywords: ["أكبر", "خط"], minConfidence: 60 },
     ],
     handler: () => modifyFontScale(0.1),
   },
@@ -200,6 +241,9 @@ export const accessibilityCommands: Record<string, CommandConfig> = {
     patterns: [
       { keywords: ["decrease", "text"], minConfidence: 55 },
       { keywords: ["smaller", "font"], minConfidence: 60 },
+      // Arabic patterns
+      { keywords: ["قلل", "نص"], minConfidence: 55 },
+      { keywords: ["أصغر", "خط"], minConfidence: 60 },
     ],
     handler: () => modifyFontScale(-0.1),
   },
@@ -213,6 +257,10 @@ export const accessibilityCommands: Record<string, CommandConfig> = {
       { keywords: ["night", "mode"], minConfidence: 50, synonyms: { "night": ["dark", "night"], "mode": ["mode", "theme"] } },
       { keywords: ["dark"], minConfidence: 55, actionWords: ["on", "enable"] },
       { keywords: ["night"], minConfidence: 55, actionWords: ["on", "enable"] },
+      // Arabic patterns
+      { keywords: ["ليل", "وضع"], minConfidence: 50 },
+      { keywords: ["ليلي"], minConfidence: 50 },
+      { keywords: ["ليل"], minConfidence: 55, actionWords: ["شغل", "فعل"] },
     ],
     handler: () => toggleDarkMode(),
   },
@@ -224,6 +272,9 @@ export const accessibilityCommands: Record<string, CommandConfig> = {
     patterns: [
       { keywords: ["contrast"], minConfidence: 60 },
       { keywords: ["high", "contrast"], minConfidence: 60 },
+      // Arabic patterns
+      { keywords: ["تباين"], minConfidence: 60 },
+      { keywords: ["عالي", "تباين"], minConfidence: 60 },
     ],
     handler: () => toggleHighContrast(),
   },
@@ -238,6 +289,9 @@ export const utilityCommands: Record<string, CommandConfig> = {
     patterns: [
       { keywords: ["refresh"], minConfidence: 65 },
       { keywords: ["reload"], minConfidence: 65 },
+      // Arabic patterns
+      { keywords: ["ريفريش"], minConfidence: 65 },
+      { keywords: ["اعادة"], minConfidence: 65 },
     ],
     handler: () => refreshPage(),
   },
@@ -249,6 +303,9 @@ export const utilityCommands: Record<string, CommandConfig> = {
     patterns: [
       { keywords: ["back"], actionWords: ["go"], minConfidence: 60 },
       { keywords: ["previous"], minConfidence: 65 },
+      // Arabic patterns
+      { keywords: ["رجع"], actionWords: ["روح"], minConfidence: 60 },
+      { keywords: ["سابق"], minConfidence: 65 },
     ],
     handler: () => goBack(),
   },
@@ -263,6 +320,36 @@ export const searchCommands: Record<string, CommandConfig> = {
     patterns: [
       { keywords: ["search"], minConfidence: 50 },
       { keywords: ["find"], minConfidence: 55 },
+      // Arabic patterns
+      { keywords: ["دور"], minConfidence: 50 },
+      { keywords: ["ابحث"], minConfidence: 55 },
+    ],
+    handler: () => true,
+  },
+  voice_search_jobs: {
+    intent: "VOICE_SEARCH_JOBS",
+    category: "Search",
+    description: "Search jobs with voice query",
+    minConfidence: 50,
+    patterns: [
+      { keywords: ["search", "jobs"], minConfidence: 50, actionWords: ["for", "find"] },
+      { keywords: ["find", "jobs"], minConfidence: 55 },
+      { keywords: ["frontend"], minConfidence: 50 },
+      { keywords: ["backend"], minConfidence: 50 },
+      { keywords: ["react"], minConfidence: 50 },
+      { keywords: ["remote"], minConfidence: 55 },
+      { keywords: ["onsite"], minConfidence: 55 },
+      { keywords: ["hybrid"], minConfidence: 55 },
+      { keywords: ["ai"], minConfidence: 55 },
+      { keywords: ["python"], minConfidence: 50 },
+      { keywords: ["javascript"], minConfidence: 50 },
+      // Arabic patterns
+      { keywords: ["دور", "وظايف", "شغل"], minConfidence: 50, actionWords: ["على"] },
+      { keywords: ["هات", "وظايف"], minConfidence: 55 },
+      { keywords: ["فرونت"], minConfidence: 50 },
+      { keywords: ["باك"], minConfidence: 50 },
+      { keywords: ["ريموت"], minConfidence: 55 },
+      { keywords: ["ذكاء"], minConfidence: 55 },
     ],
     handler: () => true,
   },
