@@ -94,6 +94,11 @@ export default function SignIn() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                   />
+                   <div className="text-right mt-1">
+     <Link to="/forgot-password" className="text-sm text-primary">
+     Forgot password?
+     </Link>
+   </div>
                 </div>
 
                 <Button className="w-full" disabled={loading}>

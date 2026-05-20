@@ -448,11 +448,11 @@ const forgotPassword = async (req, res) => {
 
     const resetLink = `${process.env.CLIENT_URL}/reset-password/${token}`;
 
-    await sendEmail(
-      user.email,
-      "Password Reset",
-      `Click to reset your password: ${resetLink}`
-    );
+    await sendEmail({
+      to: user.email,
+      subject: "Password Reset",
+      text: `Click to reset your password: ${resetLink}`
+  });
 
     res.status(200).json({ message: "Reset link sent to your email" });
   } catch (error) {
