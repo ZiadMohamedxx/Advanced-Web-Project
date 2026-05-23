@@ -277,7 +277,6 @@ export default function About() {
         </div>
       </section>
 
-
       {/* Future Scalability */}
       <section className="container py-16" aria-labelledby="future-heading">
         <h2 id="future-heading" className="text-2xl md:text-3xl font-bold mb-8 text-center">
