@@ -7,6 +7,8 @@ import {
   CheckCircle2, Star, Building2, Heart, Award, TrendingUp
 } from "lucide-react";
 
+import { useLanguage } from "@/contexts/LanguageContext";
+
 const fadeUp = {
   hidden:  { opacity: 0, y: 20 } as const,
   visible: (i: number) => ({
