@@ -277,52 +277,6 @@ export default function About() {
         </div>
       </section>
 
-      {/* Development Roadmap */}
-      <section className="bg-secondary/30 py-16" aria-labelledby="roadmap-heading">
-        <div className="container">
-          <h2 id="roadmap-heading" className="text-2xl md:text-3xl font-bold mb-8 text-center">
-            {t("about.about.developmentRoadmap")}
-          </h2>
-          <div className="max-w-3xl mx-auto space-y-4">
-            {roadmap.map((r, i) => (
-              <motion.div key={r.phaseKey} custom={i} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}>
-                <Card className={`shadow-card transition-all ${r.status === "current" ? "border-primary" : ""}`}>
-                  <CardContent className="p-6 flex items-start gap-4">
-                    <div className={`h-12 w-12 rounded-lg flex items-center justify-center shrink-0 ${
-                      r.status === "complete" ? "bg-primary/20" : r.status === "current" ? "bg-accent/20" : "bg-muted"
-                    }`}>
-                      <r.icon className={`h-6 w-6 ${
-                        r.status === "complete" ? "text-primary" : r.status === "current" ? "text-accent" : "text-muted-foreground"
-                      }`} />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                          {language === "ar"
-                            ? `المرحلة ${["١","٢","٣","٤","٥"][i]}`
-                            : `Phase ${i + 1}`}
-                        </span>
-                        {r.status === "complete" && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-                            {t("about.about.complete")}
-                          </span>
-                        )}
-                        {r.status === "current" && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-accent/10 text-accent">
-                            {t("about.about.inProgress")}
-                          </span>
-                        )}
-                      </div>
-                      <h3 className="font-semibold">{t(`about.about.${r.titleKey}`)}</h3>
-                      <p className="text-sm text-muted-foreground">{t(`about.about.${r.descKey}`)}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* Future Scalability */}
       <section className="container py-16" aria-labelledby="future-heading">
