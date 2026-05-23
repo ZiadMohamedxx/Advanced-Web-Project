@@ -160,38 +160,46 @@ export const updateApplicationStatus = async (req, res) => {
     const { status } = req.body;
 
     if (!["accepted", "rejected"].includes(status)) {
-      return res.status(400).json({
-        message: "Status must be 'accepted' or 'rejected'.",
-      });
+      return res.status(400).json({ message: "Status must be 'accepted' or 'rejected'." });
     }
 
-    const application = await Application.findById(applicationId).populate(
-      "job"
-    );
+    const application = await Application.findById(applicationId)
+      .populate("job")
+      .populate("candidate", "name email"); // ← add this
 
     if (!application) {
-      return res.status(404).json({
-        message: "Application not found.",
-      });
+      return res.status(404).json({ message: "Application not found." });
     }
 
     if (application.job.employer.toString() !== req.userId) {
-      return res.status(403).json({
-        message: "Unauthorized.",
-      });
+      return res.status(403).json({ message: "Unauthorized." });
     }
 
     application.status = status;
     await application.save();
 
-    res.status(200).json({
-      message: `Application ${status}`,
-      application,
-    });
+    // ← add this block
+    if (application.candidate?.email) {
+      const jobTitle = application.job.title;
+      const isAccepted = status === "accepted";
+
+      await sendEmail({
+        to: application.candidate.email,
+        subject: isAccepted ? `Congratulations! You've been accepted` : `Update on your application`,
+        html: isAccepted
+          ? `<h2>Great news, ${application.candidate.name}! 🎉</h2>
+             <p>You have been <b>accepted</b> for the <b>${jobTitle}</b> position.</p>
+             <p>The employer will be in touch with you shortly.</p>`
+          : `<h2>Application Update</h2>
+             <p>Thank you for applying for <b>${jobTitle}</b>.</p>
+             <p>Unfortunately, the employer has decided not to move forward with your application at this time.</p>
+             <p>Keep applying — the right opportunity is out there!</p>`,
+      });
+    }
+
+    res.status(200).json({ message: `Application ${status}`, application });
   } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
